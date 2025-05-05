@@ -1,0 +1,311 @@
+%% DOA_Smoothed_Tracking_Hardware_Demo_with_PeakPlot.m
+% Main script for azimuth-only DOA estimation using two FMComms5 boards
+% configured as an 8-element ULA (Hardware Only). Applies exponential
+% smoothing (alpha=0.4) and displays the tracking history. Includes live
+% plotting of estimated DOA peaks on the spectrum.
+%
+% This script:
+%   1. Sets up the FMComms5 receivers for two boards.
+%   2. Acquires data using get_data_fmc5_OptB (includes data flip).
+%   3. Reduces raw samples to the desired number of snapshots using external reduce_snapshots.m.
+%   4. Calls the selected 8-element DOA estimation algorithm:
+%       Options: 'MUSIC_QR', 'RQR', 'OP3R_AZ'
+%   5. Applies exponential smoothing (alpha=0.4) to the raw DOA estimate.
+%   6. Updates live plots:
+%      - Spatial spectrum with vertical lines indicating current smoothed DOA estimates.
+%      - Tracking history of the smoothed DOA estimate(s).
+%
+
+
+clear; clc; close all;
+
+%% User Options
+% --- Algorithm & Parameters ---
+% Choose algorithm: 'MUSIC_QR', 'RQR', 'OP3R_AZ'
+algorithm = 'MUSIC_QR'; 
+
+num_sources = 1;         % Expected number of sources for hardware (can be set to 2)
+dtheta_deg = 0.05;       % Angular resolution for spectrum display
+numtrials = 200;         % Number of trials to run
+num_snapshots = 100;      % Number of snapshots for DOA estimation
+
+% --- Smoothing Parameter ---
+alpha = 0.4;  % Fixed smoothing factor
+
+% --- RF Configuration ---
+CenterFrequency = 2.4e9; % 2.4 GHz
+SamplingRate = 30e6;     % 30 MHz
+SamplesPerFrame = 2^15;  % 32768 samples per frame (used for buffer size)
+
+% --- Error Handling ---
+max_reconnect = 2;       % Maximum retry attempts for data acquisition
+max_errors = 5;          % Maximum consecutive errors allowed
+num_error = 0;           % Error counter
+
+%% Hardware Setup
+rx_board1 = []; % Initialize hardware object handles
+rx_board2 = [];
+
+% FMComms5 Receiver Setup for Two Boards
+try
+    disp('Setting up hardware...');
+    % Board 1 (channels 1-4) - Adjust IP as needed
+    rx_board1 = adi.FMComms5.Rx('uri','ip:192.168.1.1', ... % IP Address for Board 1
+        'CenterFrequency', CenterFrequency, 'CenterFrequencyChipB', CenterFrequency, ...
+        'SamplingRate', SamplingRate, 'SamplesPerFrame', SamplesPerFrame);
+    rx_board1.EnabledChannels = [1 2 3 4];
+
+    % Board 2 (channels 1-4) - Adjust IP as needed
+    rx_board2 = adi.FMComms5.Rx('uri','ip:192.168.0.1', ... % IP Address for Board 2
+        'CenterFrequency', CenterFrequency, 'CenterFrequencyChipB', CenterFrequency, ...
+        'SamplingRate', SamplingRate, 'SamplesPerFrame', SamplesPerFrame);
+    rx_board2.EnabledChannels = [1 2 3 4];
+    disp('Hardware setup complete.');
+catch ME
+    warning(ME.identifier, 'Hardware setup failed: %s\nCannot proceed without hardware.', ME.message);
+    % Release any partially opened devices
+    if ~isempty(rx_board1) && isvalid(rx_board1)
+        rx_board1.release();
+    end
+     if ~isempty(rx_board2) && isvalid(rx_board2)
+        rx_board2.release();
+    end
+    error('Hardware initialization failed. Exiting script.'); % Stop execution
+end
+
+% --- Figure Numbering ---
+if ~exist('figNum','var')
+    figNum = 1;
+end
+
+%% Preallocate Arrays for DOA Estimates
+% Store the smoothed DOA estimates (handle multiple sources if needed)
+smoothed_DOA_deg_m = NaN(numtrials, num_sources);
+trial_numbers = (1:numtrials)'; % Column vector for plotting
+
+%% Set up the real-time display
+live_fig = figure('Position', [100, 100, 900, 700], 'Name', ['Live DOA Estimation (Hardware) - Algorithm: ', algorithm]);
+
+% --- Subplot 1: Spatial Spectrum & Estimated DOA(s) ---
+subplot(2, 1, 1);
+% Initialize plot handles for spectrum
+h_spectrum1 = plot(NaN, NaN, 'm', 'LineWidth', 2); % Default for MUSIC/RQR or Board 1
+hold on;
+h_spectrum2 = plot(NaN, NaN, 'r', 'LineWidth', 1.5); % For OP3R_AZ board 2
+set(h_spectrum2, 'Visible', 'off');
+% Initialize plot handles for estimated DOA vertical lines
+h_doa_vlines = gobjects(num_sources, 1); % Handles for vertical lines
+xlabel('Azimuth (deg)');
+ylabel('Spatial Spectrum (dB)');
+title_str_spec = sprintf('%s Spatial Spectrum', algorithm);
+title(title_str_spec);
+xlim([-90, 90]); ylim([-40, 5]);
+grid on;
+% Setup legend entries
+legend_spec_base = {'Spectrum'}; % Default legend entry
+if strcmp(algorithm, 'OP3R_AZ')
+    set(h_spectrum1, 'Color', 'b'); % Blue for board 1
+    legend_spec_base = {'Board 1 Spectrum', 'Board 2 Spectrum'};
+    set(h_spectrum2, 'Visible', 'on');
+end
+% Add entry for estimated DOA lines (will be updated if sources > 1)
+legend_spec_dynamic = [legend_spec_base, {'Est. DOA'}];
+legend(legend_spec_dynamic, 'Location', 'best', 'AutoUpdate', 'off'); % Turn AutoUpdate off initially
+hold off;
+
+% --- Subplot 2: Smoothed DOA Tracking History ---
+subplot(2, 1, 2);
+h_doa_lines = gobjects(num_sources, 1); % Handles for each source's tracking line
+colors = lines(num_sources); % Get distinct colors for multiple sources
+hold on; % Hold on before plotting lines
+for src = 1:num_sources % Create a line object for each expected source
+    h_doa_lines(src) = plot(NaN, NaN, '-o', 'LineWidth', 1.5, ...
+                           'MarkerSize', 4, 'Color', colors(src,:));
+end
+hold off; % Release hold after plotting initial lines
+xlabel('Trial Number');
+ylabel('Smoothed DOA Estimate (degrees)');
+title_str_track = sprintf('Smoothed DOA Tracking History (alpha=%.1f)', alpha);
+title(title_str_track);
+grid on;
+xlim([1, numtrials]);
+ylim([-90, 90]);
+% Create legend for tracking plot only if expecting more than one source
+legend_track = {};
+if num_sources > 1
+    for src = 1:num_sources
+        legend_track{end+1} = sprintf('Source %d', src);
+    end
+    legend(h_doa_lines, legend_track, 'Location', 'best'); % Add legend if > 1 source
+end
+
+
+%% Main Loop: Data Acquisition and DOA Estimation
+for t = 1:numtrials
+    try
+        % --- Acquire Data ---
+        if isempty(rx_board1) || ~isvalid(rx_board1) || isempty(rx_board2) || ~isvalid(rx_board2)
+             error('Hardware connection lost or invalid.');
+        end
+        raw_samples_m = get_data_fmc5_OptB(rx_board1, rx_board2, max_reconnect);
+
+        % --- Reduce Snapshots ---
+        rx_snapshots = reduce_snapshots(raw_samples_m, num_snapshots);
+
+        % --- DOA Estimation (Select Algorithm) ---
+        az_DOA_deg_vec = [];
+        sp_dB1 = []; sp_dB2 = []; xaxis = [];
+
+        switch algorithm
+            case 'MUSIC_QR'
+                [az_DOA_deg_vec, sp_dB1, xaxis] = sjp_get_doa_MUSIC_QR(rx_snapshots, num_sources, dtheta_deg);
+            case 'RQR'
+                [az_DOA_deg_vec, sp_dB1, xaxis] = sjp_get_doa_RQR_search_az(rx_snapshots, num_sources, dtheta_deg);
+                % --- RQR Sign Flip Correction REMOVED ---
+            case 'OP3R_AZ'
+                [az_DOA_deg_vec, sp_dB1, sp_dB2] = sjp_get_doa_OP3R_AZ_8(rx_snapshots, num_sources, dtheta_deg);
+                if ~isempty(sp_dB1), xaxis = linspace(-90, 90, length(sp_dB1)); else, xaxis = -90:dtheta_deg:90; end
+            otherwise
+                error('Unknown algorithm selected: %s', algorithm);
+        end
+
+        % --- Process Raw Results ---
+        if isempty(az_DOA_deg_vec)
+            current_raw_doa = NaN(1, num_sources);
+            warning('Trial %d: No sources found by %s.', t, algorithm);
+        elseif length(az_DOA_deg_vec) < num_sources
+             warning('Trial %d: Found %d sources with %s, expected %d. Padding with NaN.', t, length(az_DOA_deg_vec), algorithm, num_sources);
+             current_raw_doa = NaN(1, num_sources);
+             current_raw_doa(1:length(az_DOA_deg_vec)) = sort(az_DOA_deg_vec);
+        else
+            current_raw_doa = sort(az_DOA_deg_vec);
+            current_raw_doa = current_raw_doa(1:num_sources);
+        end
+        current_raw_doa = reshape(current_raw_doa, 1, num_sources);
+
+        % --- Apply Smoothing (Alpha = 0.4) ---
+        current_smoothed_doa = NaN(1, num_sources);
+        for src = 1:num_sources
+            if isnan(current_raw_doa(src))
+                if t > 1, current_smoothed_doa(src) = smoothed_DOA_deg_m(t-1, src); else, current_smoothed_doa(src) = NaN; end
+                continue;
+            end
+            if t == 1 || isnan(smoothed_DOA_deg_m(t-1, src))
+                 current_smoothed_doa(src) = current_raw_doa(src);
+            else
+                 current_smoothed_doa(src) = alpha * current_raw_doa(src) + (1-alpha) * smoothed_DOA_deg_m(t-1, src);
+            end
+        end
+        smoothed_DOA_deg_m(t, :) = current_smoothed_doa;
+
+        % --- Update Plots ---
+        if ishandle(live_fig)
+            % --- Update Spectrum Plot (Subplot 1) ---
+            subplot(2, 1, 1); % Activate subplot
+            hold on; % Hold on to add vertical lines
+            % Update spectrum data
+            if ~isempty(xaxis) && ~isempty(sp_dB1)
+                set(h_spectrum1, 'XData', xaxis, 'YData', sp_dB1);
+                if strcmp(algorithm, 'OP3R_AZ') && ~isempty(sp_dB2)
+                    set(h_spectrum2, 'XData', xaxis, 'YData', sp_dB2, 'Visible', 'on');
+                else
+                    set(h_spectrum2, 'Visible', 'off');
+                end
+            else
+                 set(h_spectrum1, 'XData', NaN, 'YData', NaN);
+                 set(h_spectrum2, 'Visible', 'off');
+            end
+
+            % --- Add/Update Estimated DOA Vertical Lines ---
+            % Delete previous vertical lines
+            delete(h_doa_vlines(isgraphics(h_doa_vlines))); % Delete only valid graphic handles
+            % Create new vertical lines for current smoothed estimates
+            line_labels = {}; % Store labels for legend update
+            valid_doa_count = 0;
+            for src_idx = 1:num_sources
+                doa_val = current_smoothed_doa(src_idx);
+                if ~isnan(doa_val) % Only plot valid estimates
+                    valid_doa_count = valid_doa_count + 1;
+                    line_label = sprintf('Est DOA %d', src_idx);
+                    h_doa_vlines(src_idx) = xline(doa_val, '--k', line_label, 'LineWidth', 1.5, 'LabelVerticalAlignment', 'bottom');
+                    line_labels{end+1} = line_label; % Add label for legend
+                end
+            end
+
+            % Update spectrum plot title
+            title_str_spec_update = sprintf('%s Spatial Spectrum - Trial %d of %d', algorithm, t, numtrials);
+            title(title_str_spec_update);
+
+            % Update legend dynamically based on plotted lines
+            current_legend = legend_spec_base; % Start with base spectrum legend
+            if valid_doa_count > 0
+                 if num_sources == 1
+                    current_legend{end+1} = 'Est. DOA'; % Generic label for single source
+                 else
+                    current_legend = [current_legend, line_labels]; % Specific labels for multiple sources
+                 end
+            end
+            legend(current_legend, 'Location', 'best'); % Update legend
+
+            hold off; % Release hold
+
+            % --- Update Tracking Plot (Subplot 2) ---
+            subplot(2, 1, 2); % Activate subplot
+            valid_trials = 1:t;
+            for src = 1:num_sources
+                 set(h_doa_lines(src), 'XData', valid_trials, 'YData', smoothed_DOA_deg_m(valid_trials, src));
+            end
+            title_str_track_update = sprintf('Smoothed DOA Tracking History (alpha=%.1f) - Trial %d', alpha, t);
+            title(title_str_track_update);
+
+            drawnow limitrate; % Refresh display
+        else
+            disp('Live plot figure closed. Stopping loop.');
+            break;
+        end
+
+        num_error = 0; % Reset error counter
+
+    catch ME
+        fprintf("Error in trial %d (%s): %s\n", t, ME.identifier, ME.message);
+        % Handle hardware/connection errors
+        if contains(ME.identifier, {'adi:', 'MATLAB:UndefinedFunction','comm:', 'instrument:', 'MATLAB:hwconnectinstaller'})
+             num_error = num_error + 1;
+             fprintf('Consecutive hardware/connection error count: %d\n', num_error);
+             if num_error >= max_errors
+                 disp("Exceeded maximum error count for hardware/connection issues. Aborting.");
+                 if ~isempty(rx_board1) && isvalid(rx_board1), rx_board1.release(); end
+                 if ~isempty(rx_board2) && isvalid(rx_board2), rx_board2.release(); end
+                 rethrow(ME);
+             end
+             pause(1);
+        else % Handle other errors
+             disp("Non-recoverable error encountered. Aborting.");
+             if ~isempty(rx_board1) && isvalid(rx_board1), rx_board1.release(); end
+             if ~isempty(rx_board2) && isvalid(rx_board2), rx_board2.release(); end
+             rethrow(ME);
+        end
+         smoothed_DOA_deg_m(t, :) = NaN; % Mark estimates as NaN for failed trial
+         % t = t - 1; % Avoid retrying failed trial
+    end
+end
+
+%% Release Hardware Resources
+disp('Releasing hardware resources...');
+if ~isempty(rx_board1) && isvalid(rx_board1)
+    rx_board1.release();
+end
+if ~isempty(rx_board2) && isvalid(rx_board2)
+    rx_board2.release();
+end
+disp('Hardware released.');
+
+%% Helper Functions Section - REMOVED
+
+% NOTE: The following helper functions are assumed to be available as
+%       separate .m files on the MATLAB path:
+%       - get_data_fmc5_OptB.m (which likely calls poll_fmc5.m)
+%       - reduce_snapshots.m
+%       - sjp_get_doa_MUSIC_QR.m
+%       - sjp_get_doa_RQR_search_az.m
+%       - sjp_get_doa_OP3R_AZ_8.m
