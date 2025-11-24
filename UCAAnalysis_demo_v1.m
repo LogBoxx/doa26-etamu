@@ -24,7 +24,7 @@ t = (0:L-1)*T;
 while true
     X = x_direct();
     Y = 10*log(abs(fftshift(fft(X))));
-    X_filtered = bandpass(X,[1,1e5],Fs);
+    X_filtered = lowpass(X,0.5e6,Fs);
     Y_filtered = 10*log(abs(fftshift(fft(X_filtered))));
 
     subplot(2,2,1)
@@ -48,9 +48,11 @@ while true
 
     subplot(2,2,4)
     plot(t,real(X_filtered))
+    xlim([0,1e-4])
     xlabel('Time (Seconds)')
     ylabel('Magnitude (Dunno)')
     title('Filtered Signal')
+    legend('Channel 1','Channel 2','Channel 3','Channel 4')
 
     pause(0.2)
 end
