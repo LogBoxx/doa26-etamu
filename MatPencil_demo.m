@@ -1,0 +1,49 @@
+clear; clf
+
+% Parameters
+N = 4;              % Number of antennas
+d = 0.5;            % Element spacing (in wavelengths)
+L = 2;              % Pencil parameter (usually between N/3 and N/2)
+
+% FMComms Init
+rx = adi.FMComms5.Rx('uri','ip:192.168.0.101');
+rx.EnabledChannels = [1 2 3 4];
+rx.SamplesPerFrame = 1;
+
+% Signal Generation
+while true
+    x = rx();
+    
+    % 1. Form the Data Matrices (Shifting Window)
+    % Y1 is the first N-1 elements, Y2 is the last N-1 elements
+    Y1 = x(1:N-1);
+    Y2 = x(2:N);
+    
+    % 2. Total Least Squares (TLS) Approach
+    % Construct the matrix [Y1 | Y2] and find its SVD
+    Z = [Y1, Y2];
+    [U, S, V] = svd(Z, 0);
+    
+    % For a single source, we look at the signal subspace
+    % V = [V11 V12; V21 V22]. The TLS solution is -V12 * inv(V22)
+    V12 = V(1, 2);
+    V22 = V(2, 2);
+    z_tls = -V12 / V22;
+    
+    % 3. Extract Angle
+    % The pole z = exp(j * 2 * pi * d * sin(theta))
+    estimated_theta_rad = abs(asin(angle(z_tls) / (2 * pi * d)));
+    estimated_theta_deg = real(rad2deg(estimated_theta_rad));
+    
+    % Results
+    %fprintf('True Angle: %.2f°\n', theta_true);
+    fprintf('Estimated Angle (TLS-MP): %.2f°\n', estimated_theta_deg);
+    
+    % h = compassplot(exp(1j*estimated_theta_rad));
+    % ax = gca;
+    % ax.RTickLabel = {};
+    % thetalim([0,90])
+    
+    %theta_true = theta_true + 1;
+    pause(0.2)
+end
