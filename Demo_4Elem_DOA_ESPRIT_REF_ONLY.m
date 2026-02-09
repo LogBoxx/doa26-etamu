@@ -1,4 +1,5 @@
-%% Demo_4Elem_DOA.m
+%% Demo_4Elem_DOA_ESPRIT_REF_ONLY
+%% Logan's work (God tier)
 
 clear; clc; close all;
 
@@ -10,8 +11,8 @@ algorithm = 'ESPRIT_REF';
 
 num_sources = 1;
 dtheta_deg = 0.25;
-numtrials = 100;
-num_snapshots = 2^5;  % How many snapshots to use after reduction
+numtrials = 10000;
+num_snapshots = 2^9;  % How many snapshots to use after reduction
 CenterFrequency = 2.4e9;
 SamplingRate = 30e6;        % 30 MHz
 SamplesPerFrame = 2^14;     % 16384 samples per frame
@@ -22,7 +23,7 @@ num_error = 0;
 
 try
     % Example for a 4-channel FMComms5 setup (adjust according to your hardware)
-    rx_device = adi.FMComms5.Rx('uri','ip:192.168.0.1', ...
+    rx_device = adi.FMComms5.Rx('uri','ip:192.168.0.101', ...
         'CenterFrequency', CenterFrequency, ...
         'SamplingRate', SamplingRate, 'SamplesPerFrame', SamplesPerFrame);
     rx_device.EnabledChannels = [1 2 3 4];  % Enable all 4 channels
@@ -33,7 +34,7 @@ catch ME
 end
 
 if ~exist('simulation_mode', 'var')
-    simulation_mode = true;
+    simulation_mode = false;
 end
 
 if ~exist('figNum', 'var')
@@ -67,7 +68,9 @@ for t = 1:numtrials
         az_hist = [az_hist(2:end,:); az_DOA_deg(:).'];
         az_avg = mean(az_hist, 1, 'omitnan');
 
-        update_live_plot(algorithm, t, az_avg, xaxis, sp_dB, num_snapshots);
+        update_live_plot(algorithm, t, az_DOA_deg, az_avg, xaxis, sp_dB, num_snapshots);
+
+
 
         % Store the estimated azimuth DOA for final statistics
         az_DOA_deg_m(t, :) = az_avg;
@@ -99,11 +102,11 @@ title(["Azimuth-Only DOA (4-Element ULA)", "Std. = " + num2str(est_std), ...
 xlabel("Azimuth (deg)");
 ylabel("Elevation (not used)");
 xlim([-90, 90]);
-ylim([-10, 10]);
+%ylim([-10, 10]);
 grid on;
 figNum = figNum + 1;
 
-function update_live_plot(algorithm, t, az_DOA_deg, varargin)
+function update_live_plot(algorithm, t, az_DOA_deg, az_avg, varargin)
     % Get the number of snapshots (last argument)
     num_snapshots_arg = varargin{end};
 
@@ -119,13 +122,15 @@ function update_live_plot(algorithm, t, az_DOA_deg, varargin)
         
         % Combined spectrum plot
         subplot(2,1,1);
-        plot(xaxis_sp_v, sp_board1_db_v, 'b', 'LineWidth', 1.5); hold on;
-        plot(xaxis_sp_v, sp_board2_db_v, 'r', 'LineWidth', 1.5);
+        plot(xaxis, sp_dB, 'm', 'LineWidth', 2); hold on;
+        xline(az_avg, '--k', 'LineWidth', 2);
+        hold off;
         xlabel("Azimuth (deg)");
-        ylabel("Spectrum (dB)");
-        title("DOA Spectra (Blue: Subarray 1, Red: Subarray 2)");
-        xlim([-90, 90]); ylim([-10, 0]);
-        grid on; legend('Subarray 1', 'Subarray 2');
+        ylabel("Spatial Spectrum (dB)");
+        title("Full-Array Spatial Spectrum");
+        xlim([-90, 90]); ylim([-50, 0]);
+        grid on;
+
     else % ESPRIT_REF (full-array spectrum)
         xaxis = varargin{1};
         sp_dB = varargin{2};
@@ -137,15 +142,17 @@ function update_live_plot(algorithm, t, az_DOA_deg, varargin)
         xlabel("Azimuth (deg)");
         ylabel("Spatial Spectrum (dB)");
         title("Full-Array Spatial Spectrum");
-        xlim([-90, 90]); ylim([-10, 0]);
+        xlim([-90, 90]); ylim([-50, 0]);
+        xline(az_avg);
         grid on;
     end
     
     % DOA estimate plot - common for all algorithms
     subplot(2,1,2);
-    scatter(az_DOA_deg, zeros(size(az_DOA_deg)), 300, 'x', 'LineWidth', 4);
+    %scatter(az_DOA_deg, zeros(size(az_DOA_deg)), 300, 'x', 'LineWidth', 4);
+    scatter(az_avg, zeros(size(az_DOA_deg)), 300, 'x', 'LineWidth', 4);
     title("DOA Estimate, Trial: " + num2str(t));
-    xlabel("Azimuth (deg)"); ylabel("Elevation (not used)");
+    xlabel("Azimuth (deg)");
     xlim([-90, 90]); ylim([-10, 10]); grid on;
     
     % Use the explicitly passed number of snapshots
@@ -163,11 +170,18 @@ function [az_DOA_deg, sp_dB, xaxis] = esprit_ref_4elem_with_spectrum(rx_m, num_s
     d = 0.5; % element spacing in wavelengths (matches your sim + typical half-lambda ULA)
 
     % --- ESPRIT DOA ---
+    
     R = (rx_m*rx_m')/N;
+
+    % --- Forward–Backward averaging (ULA) ---
+    J = flipud(eye(M));            % Exchange matrix
+    R = 0.5 * (R + J*conj(R)*J);   % FB-averaged covariance
+    % ----------------------------------------
 
     [U,D] = eig(R);
     [~,idx] = sort(diag(D),'descend');
     U = U(:,idx);
+
 
     if num_sources < 1 || num_sources > 3
         error('num_sources must be between 1 and 3 for 4-element ESPRIT.');
