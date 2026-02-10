@@ -1,5 +1,5 @@
 # UAV Tracking System for Azimuth, Elevation, and Range Estimation for Indoor/Outdoor Application
-ClCapstone of 2026
+East Texas A&M University - ClCapstone of 2026
 
 # Advisors:
 Dr. Tayem<br>
