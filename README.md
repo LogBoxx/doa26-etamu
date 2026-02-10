@@ -1,11 +1,11 @@
 # UAV Tracking System for Azimuth, Elevation, and Range Estimation for Indoor/Outdoor Application
 East Texas A&M University - Class of 2026
 
-# Advisors:
+#  Senior Design Project Advisors:
 Dr. Tayem<br>
 Dr. Radaydeh<br>
 
-# Team Members:
+# Senior Design Project Team Members:
 Logan Boxdorfer<br>
 Alden Edwards<br>
 Brandon Lewis<br>
@@ -14,7 +14,7 @@ Parker Reeves<br>
 
 # Disclaimer
 
-This write-up is a guide written by the 2026 capstone team in order to help future teams understand the contributions done up to the current point. Everything written here demonstrates our group's understanding of the project and steps to success, and all of the information below has attempted to have been proven true in good faith. Please keep this updated and organized as best as possible to achieve this continuous effort. 
+This write-up is a guide written by the 2026 Senior Design Project Team in order to help future teams understand the contributions done up to the current point. Everything written here demonstrates our group's understanding of the project and steps to success, and all of the information below has attempted to have been proven true in good faith. Please keep this updated and organized as best as possible to achieve this continuous effort. 
 
 # Problem Statement:
 Creating effective means of tracking Unmanned Aerial Vehicles (UAVs) has become a prevalent objective in warfare and civil environments
