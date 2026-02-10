@@ -14,7 +14,7 @@ Parker Reeves<br>
 
 # Disclaimer
 
-This write-up is a guide written by the 2026 Senior Design Project Team in order to help future teams understand the contributions done up to the current point. Everything written here demonstrates our group's understanding of the project and steps to success, and all of the information below has attempted to have been proven true in good faith. Please keep this updated and organized as best as possible to achieve this continuous effort. 
+This write-up is a guide written by the 2026 Senior Design Project Team in order to help future teams understand the contributions done up to the current point. Everything written here demonstrates our group's understanding of the project and steps to success, and all of the information below has been believed to be true. Please keep this updated and organized as best as possible to achieve this continuous effort. 
 
 # Problem Statement:
 Creating effective means of tracking Unmanned Aerial Vehicles (UAVs) has become a prevalent objective in warfare and civil environments
@@ -51,8 +51,26 @@ Change the color of every other voltage waveform to black.
 # Phase Synchronization
 
 [FMComms5 Phase Synchronization](https://wiki.analog.com/resources/eval/user-guides/ad-fmcomms5-ebz/phase-sync)<br><br>
+[Phase Synchronization Capability of the
+Analog Devices FMComms5 and DoA Estimation](https://wiki.analog.com/_media/resources/tools-software/linux-software/doa_whitepaper.pdf)<br> ^ VERY HELPFUL CONCEPTUALLY ^ <br>
 DoA will not be achieved without phase synchronization. The FMComms5 board has built-in capabilities to sync both on-board chips, and subsequently provide phase synchronization.<br><br>
-Once IIO-Scope is open, tab over to the settings window, at the top of the screen.<br>
+Close IIO-Scope and reopen it once the board it booted. To verify the default configuration, the sample rate should be at 30.72 MSPS with RF Bandwidth 18.00 MHz. All LOs should be at 2.4 GHz by default.<br>
+To calibrate FMComms5, perform the following within IIO-Scope:<br>
+1. From the FMComms5 panel, match all of the LOs to the desired frequency for all four datapaths.<br>
+2. Disable all receiver trackings (right hand side of page): Quadrature, RF DC, BB DC<br>
+3. Put all receivers into **slow_attack** Gain Control Mode
+4. Set manually hardware gains for all receivers to achieve an RSSI of 50-55dB (The guide says 37-43, however this does not achieve calibration for our group).<br>
+5. From the AD936X panel, select FMComms5 tab.
+6. Click _Reset Calibration_
+7. Wait 5s
+8. Verify TX Phase rotation = 0
+9. Click _MCS Sync_ at the bottom
+10. Wait 5s
+11. Click _Calibrate_, which will launch the procedure
+12. Turn off Quadrature tracking again
+13. Verify TX, RX Phase rotation ≠ 0
+
+
 
 
 
