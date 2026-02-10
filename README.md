@@ -40,8 +40,6 @@ a. r2023b or older<br>
 b. r2024a or newer<br>
 [SoC Blockset Support Package for AMD FPGA and SoC Devices](https://www.mathworks.com/matlabcentral/fileexchange/70616-soc-blockset-support-package-for-amd-fpga-and-soc-devices)<br>
 
-# Installation
-
 # Initialization of IIO-Scope
 
 IIO-Scope is picky with how the oscilloscope will let you view receieved signals. You must display signals in powers of 2 (1, 2, 4, 8). Also, since complex signals are being receieved, there is both an I and Q component to each signal, and those are displayed separately.<br>
@@ -53,7 +51,7 @@ Change the color of every other voltage waveform to black.
 [FMComms5 Phase Synchronization](https://wiki.analog.com/resources/eval/user-guides/ad-fmcomms5-ebz/phase-sync)<br><br>
 [Phase Synchronization Capability of the
 Analog Devices FMComms5 and DoA Estimation](https://wiki.analog.com/_media/resources/tools-software/linux-software/doa_whitepaper.pdf)<br> ^ REQUIRED READING ^ <br><br>
-DoA will not be achieved without phase synchronization. The FMComms5 board has built-in capabilities to sync both on-board chips, and subsequently provide phase synchronization.<br><br>
+DoA will not be achieved without phase synchronization. This step must be done manually every time the system is power cycled. The FMComms5 board has built-in capabilities to sync both on-board chips, and subsequently provide phase synchronization.<br><br>
 Close IIO-Scope and reopen it once the board it booted. To verify the default configuration, the sample rate should be at 30.72 MSPS with RF Bandwidth 18.00 MHz. All LOs should be at 2.4 GHz by default.<br>
 To calibrate FMComms5, perform the following within IIO-Scope:<br>
 0. Wire each TX to RX on FMComms5. ____Ensure TX1_A -> RX1_a, TX2_A -> RX2_A, TX1_B -> RX1_B, TX2_B -> RX2_B____
@@ -80,4 +78,7 @@ Defaults:<br>
 A: 192.168.0.1<br>
 B: 192.168.1.1<br>
 
-# 
+# Script Usage
+
+
+
