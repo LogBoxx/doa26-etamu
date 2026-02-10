@@ -36,7 +36,6 @@ Publication of experimental results and presentation in the AFRL University Desi
 <br>
 (8) generic 2.4GHz monopole omnidirectional antenna
 <br>
-# Getting Started
 
 # Prerequisites
 [ADI Kuiper Linux](https://github.com/analogdevicesinc/adi-kuiper-gen)
@@ -62,3 +61,8 @@ b. r2024a or newer
 # Usage
 
 
+
+# IPs on Zynq Boards
+Colton or Parker need to write this in
+
+# 
