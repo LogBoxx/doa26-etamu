@@ -2,15 +2,22 @@
 Class of 2026
 
 # Advisors:
-Dr. Tayem<br>
+Dr. Tayem
+<br>
 Dr. Radaydeh
+<br>
 
 # Team Members:
-Logan Boxdorfer<br>
-Alden Edwards<br>
-Brandon Lewis<br>
-Colton Vandeburg<br>
+Logan Boxdorfer
+<br>
+Alden Edwards
+<br>
+Brandon Lewis
+<br>
+Colton Vandeburg
+<br>
 Parker Reeves
+<br>
 
 # Problem Statement:
 Creating effective means of tracking Unmanned Aerial Vehicles (UAVs) has become a prevalent objective in warfare and civil environments
@@ -23,10 +30,12 @@ Fully implemented hybrid DoA and range estimation system capable of real-time UA
 Publication of experimental results and presentation in the AFRL University Design Challenge
 
 # Required:
-(2) AMD Zynq™ 7000 SoC ZC702 Evaluation Kit<br>
-(2) AD-FMCOMMS5-EBZ (Dual AD9361 Evaluation Board)<br>
+(2) AMD Zynq™ 7000 SoC ZC702 Evaluation Kit
+<br>
+(2) AD-FMCOMMS5-EBZ (Dual AD9361 Evaluation Board)
+<br>
 (8) generic 2.4GHz monopole omnidirectional antenna
-
+<br>
 # Getting Started
 
 # Prerequisites
@@ -45,11 +54,6 @@ r2024a or newer
 <br>
 [SoC Blockset Support Package for AMD FPGA and SoC Devices](https://www.mathworks.com/matlabcentral/fileexchange/70616-soc-blockset-support-package-for-amd-fpga-and-soc-devices)
 <br>
-
-
-
-
-
 
 ### Installation
 
