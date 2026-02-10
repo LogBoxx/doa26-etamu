@@ -42,7 +42,7 @@ Publication of experimental results and presentation in the AFRL University Desi
 [ADI Kuiper Linux](https://github.com/analogdevicesinc/adi-kuiper-gen)
 <br>
 <br>
-2. MATLAB
+MATLAB
 <br>
 a. r2023b or older
 <br>
