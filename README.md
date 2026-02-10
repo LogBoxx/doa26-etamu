@@ -52,7 +52,7 @@ Change the color of every other voltage waveform to black.
 
 [FMComms5 Phase Synchronization](https://wiki.analog.com/resources/eval/user-guides/ad-fmcomms5-ebz/phase-sync)<br><br>
 [Phase Synchronization Capability of the
-Analog Devices FMComms5 and DoA Estimation](https://wiki.analog.com/_media/resources/tools-software/linux-software/doa_whitepaper.pdf)<br> ^ VERY HELPFUL CONCEPTUALLY ^ <br>
+Analog Devices FMComms5 and DoA Estimation](https://wiki.analog.com/_media/resources/tools-software/linux-software/doa_whitepaper.pdf)<br> ^ VERY HELPFUL CONCEPTUALLY ^ <br><br>
 DoA will not be achieved without phase synchronization. The FMComms5 board has built-in capabilities to sync both on-board chips, and subsequently provide phase synchronization.<br><br>
 Close IIO-Scope and reopen it once the board it booted. To verify the default configuration, the sample rate should be at 30.72 MSPS with RF Bandwidth 18.00 MHz. All LOs should be at 2.4 GHz by default.<br>
 To calibrate FMComms5, perform the following within IIO-Scope:<br>
