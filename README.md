@@ -73,7 +73,7 @@ To calibrate FMComms5, perform the following within IIO-Scope:<br>
 16. If _Calibration Failed_, ensure correct Sample Rate, RF Bandwidth, LO frequency, and RSSI > 50dB 
 
 # IPs on Zynq Boards<br>
-Use _ifconfig__ in shell to determine local IP address<br><br>
+Use _ifconfig_ in shell to determine local IP address<br><br>
 Defaults:<br>
 A: 192.168.0.1<br>
 B: 192.168.1.1<br>
