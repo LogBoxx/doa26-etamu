@@ -70,14 +70,10 @@ To calibrate FMComms5, perform the following within IIO-Scope:<br>
 12. Turn off Quadrature tracking again
 13. Verify TX, RX Phase rotation ≠ 0
 
-
-
-
-
-
-
-
-# IPs on Zynq Boards
-Colton or Parker need to write this in
+# IPs on Zynq Boards<br>
+use ifconfig in shell to determine local IP address<br>
+Defaults:<br>
+A: 192.168.0.1<br>
+B: 192.168.1.1<br>
 
 # 
