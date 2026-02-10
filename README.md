@@ -9,7 +9,7 @@ Dr. Radaydeh<br>
 Logan Boxdorfer<br>
 Alden Edwards<br>
 Brandon Lewis<br>
-Colton Vandeburg<br>
+Colton Vandenburg<br>
 Parker Reeves<br>
 
 # Disclaimer
