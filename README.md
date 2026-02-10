@@ -1,11 +1,11 @@
 # UAV Tracking System for Azimuth, Elevation, and Range Estimation for Indoor/Outdoor Application
 East Texas A&M University - Class of 2026
 
-#  Senior Design Project Advisors:
+#  Project Advisors:
 Dr. Tayem<br>
 Dr. Radaydeh<br>
 
-# Senior Design Project Team Members:
+# Project Team Members:
 Logan Boxdorfer<br>
 Alden Edwards<br>
 Brandon Lewis<br>
