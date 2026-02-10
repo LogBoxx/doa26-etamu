@@ -2,14 +2,14 @@
 # Class of 2026
 
 # Advisors:
-Dr. Tayem
+Dr. Tayem<br>
 Dr. Radaydeh
 
 # Team Members:
-Logan Boxdorfer
-Alden Edwards
-Brandon Lewis
-Colton Vandeburg
+Logan Boxdorfer<br>
+Alden Edwards<br>
+Brandon Lewis<br>
+Colton Vandeburg<br>
 Parker Reeves
 
 # Problem Statement:
@@ -19,14 +19,13 @@ Creating effective means of tracking Unmanned Aerial Vehicles (UAVs) has become 
 Develop a hybrid Direction-of-Arrival (DoA) system with synchronized SDR hardware utilizing MUSIC algorithms and LiDAR range-finding 
 
 # Deliverables:
-Fully implemented hybrid DoA and range estimation system capable of real-time UAV tracking in azimuth/elevation planes
+Fully implemented hybrid DoA and range estimation system capable of real-time UAV tracking in azimuth/elevation planes<br>
 Publication of experimental results and presentation in the AFRL University Design Challenge
 
 # Required:
-(2) AMD Zynq™ 7000 SoC ZC702 Evaluation Kit
-(2) AD-FMCOMMS5-EBZ (Dual AD9361 Evaluation Board)
+(2) AMD Zynq™ 7000 SoC ZC702 Evaluation Kit<br>
+(2) AD-FMCOMMS5-EBZ (Dual AD9361 Evaluation Board)<br>
 (8) generic 2.4GHz monopole omnidirectional antenna
-
 
 # Getting Started
 
