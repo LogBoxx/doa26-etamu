@@ -19,6 +19,10 @@ Colton Vandeburg
 Parker Reeves
 <br>
 
+# Disclaimer
+
+This write-up is a guide written by the 2026 capstone team in order to help future teams understand the contributions done up to the current point. Everything written here demonstrates our group's understanding of the project and steps to success, and all of the information below has attempted to have been proven true in good faith. Please keep this updated and organized as best as possible to achieve this continuous effort. 
+
 # Problem Statement:
 Creating effective means of tracking Unmanned Aerial Vehicles (UAVs) has become a prevalent objective in warfare and civil environments
 
@@ -56,9 +60,23 @@ b. r2024a or newer
 
 # Installation
 
+# Initialization of IIO-Scope
+
+IIO-Scope is picky with how the oscilloscope will let you view receieved signals. You must display signals in powers of 2 (1, 2, 4, 8). Also, since complex signals are being receieved, there is both an I and Q component to each signal, and those are displayed separately.
+<br>
+To view only the I (real) component of signals in IIO-Scope:
+<br>
+Change the color of every other voltage waveform to black.
+
+# Phase Synchronization
+
+[FMComms5 Phase Synchronization](https://wiki.analog.com/resources/eval/user-guides/ad-fmcomms5-ebz/phase-sync)
+<br>
+DoA will not be achieved without phase synchronization. The FMComms5 board has built-in capabilities to sync both on-board chips, and subsequently provide phase synchronization.
+<br>
+Once IIO-Scope 
 
 
-# Usage
 
 
 
