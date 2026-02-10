@@ -39,43 +39,26 @@ Publication of experimental results and presentation in the AFRL University Desi
 # Getting Started
 
 # Prerequisites
-1. [ADI Kuiper Linux](https://github.com/analogdevicesinc/adi-kuiper-gen)
+[ADI Kuiper Linux](https://github.com/analogdevicesinc/adi-kuiper-gen)
 <br>
 <br>
 2. MATLAB
 <br>
-    a. r2023b or older
+a. r2023b or older
 <br>
 [Communications Toolbox Support Package for Xilinx Zynq-Based Radio](https://www.mathworks.com/matlabcentral/fileexchange/48491-communications-toolbox-support-package-for-xilinx-zynq-based-radio)
 <br>
 [Communications Toolbox Support Package for Analog Devices ADALM-Pluto Radio](https://www.mathworks.com/help/supportpkg/plutoradio/index.html)
 <br>
-    b. r2024a or newer
+b. r2024a or newer
 <br>
 [SoC Blockset Support Package for AMD FPGA and SoC Devices](https://www.mathworks.com/matlabcentral/fileexchange/70616-soc-blockset-support-package-for-amd-fpga-and-soc-devices)
 <br>
 
-### Installation
+# Installation
 
-1.  Clone the repository:
-    ```sh
-    git clone https://github.com
-    ```
-2.  Navigate to the project directory:
-    ```sh
-    cd your_project
-    ```
-3.  Install dependencies (example using npm/yarn):
-    ```sh
-    npm install 
-    # or yarn install
-    ```
 
-## Usage
 
-Provide examples and instructions on how to use the project. This can include running commands, configuration options, and basic code snippets.
+# Usage
 
-```sh
-# Example command to run the application
-npm start
 
