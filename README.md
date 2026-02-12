@@ -94,6 +94,11 @@ Defaults:<br>
 A: 192.168.0.1<br>
 B: 192.168.1.1<br>
 
+_sudo ip addr add 192.168.0.101/24 dev eth0
+sudo ip addr add 192.168.1.101/24 dev eth0_
+
+>>_ifconfig_ to verify
+
 # Script Usage
 
 DoubleDemo.m
