@@ -330,4 +330,3 @@ function ad9361_phase_sync(ctx, lo_hz)
         error("Phase sync/cal failed, ret=%d", ret);
     end
 end
-```

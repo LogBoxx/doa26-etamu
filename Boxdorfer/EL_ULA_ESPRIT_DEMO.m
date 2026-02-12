@@ -50,19 +50,14 @@ el_hist = nan(Navg, num_sources);
 
 for t = 1:numtrials
     try
-        % Acquire data (either from hardware or simulation)
         if simulation_mode
-            % Generate simulated signal for testing
             rx_m = generate_simulated_data(4, 1000, source_angles, snr_db);
         else
-            % Acquire data from hardware using get_data_fmc5_4elem function
             rx_m = get_data_fmc5_4elem(rx_device, max_reconnect);
         end
 
-        % Reduce the raw samples to the desired number of snapshots
         rx_snapshots = reduce_snapshots(rx_m, num_snapshots);
 
-        % Call DOA estimation algorithm (reference ESPRIT + full-array Bartlett spectrum)
         [el_DOA_deg, sp_dB, xaxis] = esprit_ref_4elem_with_spectrum(rx_snapshots, num_sources, dtheta_deg);
 
         el_hist = [el_hist(2:end,:); el_DOA_deg(:).'];
@@ -70,17 +65,15 @@ for t = 1:numtrials
 
         update_live_plot(algorithm, t, el_DOA_deg, el_avg, xaxis, sp_dB, num_snapshots);
 
-        % Store the estimated elevation DOA for final statistics
         el_DOA_deg_m(t, :) = el_avg;
 
-        % Print current estimate to console
         fprintf('Trial %d: Estimated EL = %0.2f deg | Avg(10) = %0.2f deg\n', ...
             t, el_DOA_deg, el_avg);
 
     catch ME
         disp("Error in trial " + t + ": " + ME.message);
         num_error = num_error + 1;
-        t = t - 1;  % Retry the current trial
+        t = t - 1;
         if num_error >= max_errors
             disp("Exceeded maximum error count. Aborting.");
             rethrow(ME);
@@ -104,19 +97,16 @@ xlim([-90, 90]);
 grid on;
 figNum = figNum + 1;
 
-%% PLOT FUNCTION
 function update_live_plot(algorithm, t, el_DOA_deg, el_avg, varargin)
-    % Get the number of snapshots (last argument)
+
     num_snapshots_arg = varargin{end};
 
-    figure(100); clf;  % Use a consistent figure number for live plotting
+    figure(100); clf;
 
-    % Plot spectrum based on the algorithm
-    if false % (kept for legacy ESPRIT plotting)
+    if false
         xaxis_sp_v       = varargin{1};
         sp_board1_db_v   = varargin{2};
         sp_board2_db_v   = varargin{3};
-        % num_snapshots_arg is varargin{4}
 
         subplot(2,1,1);
         plot(xaxis, sp_dB, 'm', 'LineWidth', 2); hold on;
@@ -128,10 +118,9 @@ function update_live_plot(algorithm, t, el_DOA_deg, el_avg, varargin)
         xlim([-90, 90]); ylim([-50, 0]);
         grid on;
 
-    else % ESPRIT_REF (full-array spectrum)
+    else
         xaxis = varargin{1};
         sp_dB = varargin{2};
-        % num_snapshots_arg is varargin{3}
 
         subplot(2,1,1);
         plot(xaxis, sp_dB, 'm', 'LineWidth', 2);
@@ -143,7 +132,6 @@ function update_live_plot(algorithm, t, el_DOA_deg, el_avg, varargin)
         grid on;
     end
 
-    % DOA estimate plot
     subplot(2,1,2);
     scatter(el_avg, zeros(size(el_DOA_deg)), 300, 'x', 'LineWidth', 4);
     title("DOA Estimate, Trial: " + num2str(t));
@@ -154,7 +142,6 @@ function update_live_plot(algorithm, t, el_DOA_deg, el_avg, varargin)
     drawnow;
 end
 
-%% FUNCTIONS
 function [el_DOA_deg, sp_dB, xaxis] = esprit_ref_4elem_with_spectrum(rx_m, num_sources, dtheta_deg)
 
     [M,N] = size(rx_m);
@@ -162,24 +149,19 @@ function [el_DOA_deg, sp_dB, xaxis] = esprit_ref_4elem_with_spectrum(rx_m, num_s
         error('Expected rx_m as 4xN for 4-element ULA.');
     end
 
-    d = 0.5; % element spacing in wavelengths (half-lambda)
+    d = 0.5;
 
-    % --- ESPRIT DOA W FORWARD BACKWARD AVERAGING ---
     R = (rx_m*rx_m')/N;
 
-    % --- Forward Backward Averaging ---
     J = flipud(eye(M));
     R = 0.5 * (R + J*conj(R)*J);
-    % ---------------------------------
 
     [U,D] = eig(R);
     [~,idx] = sort(diag(D),'descend');
     U = U(:,idx);
 
-    Es = U(:,1:num_sources);  % 4xK
+    Es = U(:,1:num_sources);
 
-    % Overlapping subarrays: [1 2 3] and [2 3 4]
-    % DONT CHANGE J1 J2 E1 E2
     J1 = [eye(3), zeros(3,1)];
     J2 = [zeros(3,1), eye(3)];
 
@@ -189,11 +171,10 @@ function [el_DOA_deg, sp_dB, xaxis] = esprit_ref_4elem_with_spectrum(rx_m, num_s
     Psi = pinv(E1)*E2;
     ev  = eig(Psi);
 
-    u = angle(ev)/(2*pi*d);          % u = sin(theta)
-    u = max(min(real(u),1),-1);      % clamp numerical spill
+    u = angle(ev)/(2*pi*d);
+    u = max(min(real(u),1),-1);
     el_DOA_deg = sort(asind(u));
 
-    % --- Full-array pseudo spectrum for plotting ---
     xaxis = linspace(-90, 90, 180/dtheta_deg + 1);
     pos   = (-(M-1)/2 : (M-1)/2).';
 
@@ -209,46 +190,39 @@ end
 
 function rx_m = generate_simulated_data(num_antennas, num_samples, source_angles, snr_db)
 
-    d = 0.5;  % Half-wavelength spacing
+    d = 0.5;
     num_sources = length(source_angles);
 
-    % Array geometry (centered around origin)
     array_positions = (-(num_antennas-1)/2 : (num_antennas-1)/2)';
 
-    % Generate source signals (complex Gaussian)
     source_signals = (randn(num_sources, num_samples) + 1j*randn(num_sources, num_samples))/sqrt(2);
 
-    % Compute steering matrix
     A = zeros(num_antennas, num_sources);
     for i = 1:num_sources
         theta_rad = source_angles(i) * pi/180;
         A(:,i) = exp(1j * 2*pi*d * array_positions * sin(theta_rad));
     end
 
-    % Noiseless received signal
     signal_component = A * source_signals;
 
-    % Add noise based on SNR
     signal_power = mean(abs(signal_component(:)).^2);
     noise_power  = signal_power / (10^(snr_db/10));
     noise = sqrt(noise_power/2) * (randn(num_antennas, num_samples) + 1j*randn(num_antennas, num_samples));
 
-    % Final received signal
     rx_m = signal_component + noise;
 end
 
-% Just keep this
 function [rx_m] = get_data_fmc5_4elem(rx_device, NUM_RETRY)
 
     valid = false;
-    j = 0; % # times data retrieved but invalid
-    k = 0; % # connection attempts
+    j = 0;
+    k = 0;
 
     while ~valid
         try
             raw_data = rx_device();
-            rx_m = fliplr(raw_data); %#ok<NASGU>  % (kept as-is from your script)
-            rx_m = raw_data';  % channels in rows
+            rx_m = fliplr(raw_data);
+            rx_m = raw_data';
 
             valid = all(size(rx_m) > 0) && ~any(isnan(rx_m(:))) && sum(abs(rx_m(:))) > 0;
         catch ME
