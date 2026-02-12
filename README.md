@@ -70,7 +70,8 @@ To calibrate FMComms5, perform the following within IIO-Scope:<br>
 13. Verify TX, RX Phase rotation ≠ 0
 14. Once verified, wire FMComms5 to antenna array
 15. To verify phase synchronization, tab back to oscilloscope view and view<br>
-16. If _Calibration Failed_, ensure correct Sample Rate, RF Bandwidth, LO frequency, and RSSI > 50dB 
+16. Consider changing to _fast_attack_ for better estimation (anecdotal-not researched
+17. If _Calibration Failed_, ensure correct Sample Rate, RF Bandwidth, LO frequency, and RSSI > 50dB 
 
 # IPs on Zynq Boards<br>
 Use _ifconfig_ in shell to determine local IP address<br><br>
