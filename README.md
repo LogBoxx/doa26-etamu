@@ -69,7 +69,7 @@ Analog Devices FMComms5 and DoA Estimation](https://wiki.analog.com/_media/resou
 DoA will not be achieved without phase synchronization. This step must be done manually every time the system is power cycled. The FMComms5 board has built-in capabilities to sync both on-board chips, and subsequently provide phase synchronization.<br><br>
 Close IIO-Scope and reopen it once the board it booted. To verify the default configuration, the sample rate should be at 30.72 MSPS with RF Bandwidth 18.00 MHz. All LOs should be at 2.4 GHz by default.<br><br>
 To calibrate FMComms5, perform the following within IIO-Scope:<br>
-0. Wire each TX to RX on FMComms5. ____Ensure TX1_A -> RX1_a, TX2_A -> RX2_A, TX1_B -> RX1_B, TX2_B -> RX2_B__ <br>
+0. Wire each TX to RX on FMComms5. Ensure __TX1_A -> RX1_a, TX2_A -> RX2_A, TX1_B -> RX1_B, TX2_B -> RX2_B__ <br>
 1. From the FMComms5 panel, match all of the LOs to the desired frequency for all four datapaths.<br>
 2. Disable all receiver trackings (right hand side of page): Quadrature, RF DC, BB DC<br>
 3. Put all receivers into **slow_attack** Gain Control Mode
