@@ -101,7 +101,14 @@ _ifconfig_ to verify
 
 # Script Usage
 
-DoubleDemo.m<br>
+#demo<br>
+uca demo.m placeholder <br>
+ula demo.m placeholder <br>
+double demo placeholder <br>
+
+#simulation <br>
+
+2d plots . m <br>
 
 
 
