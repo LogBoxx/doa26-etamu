@@ -14,7 +14,7 @@ Parker Reeves<br>
 
 # Disclaimer
 
-This write-up is a guide written by the 2026 Senior Design Project Team in order to help future teams understand the contributions done up to the current point. Everything written here demonstrates our group's understanding of the project and steps to success, and all of the information below has been believed to be true. Please keep this updated and organized as best as possible to achieve this continuous effort. 
+This is a guide written by the 2026 Senior Design Project Team in order to help future teams understand the contributions done up to the current point. Everything written here demonstrates our group's understanding of the project and steps to success, and all of the information below has been believed to be true. Please keep this updated and organized as best as possible to achieve this continuous effort. 
 
 # Problem Statement:
 Creating effective means of tracking Unmanned Aerial Vehicles (UAVs) has become a prevalent objective in warfare and civil environments
