@@ -1,4 +1,4 @@
-# UAV Tracking System (Azimuth, Elevation, Range) – Indoor/Outdoor
+# UAV Tracking System for Azimuth, Elevation, and Range Estimation for Indoor/Outdoor Application
 East Texas A&M University – Senior Design (Class of 2026)<br>
 
 This repository documents a hybrid tracking system that estimates **azimuth**, **elevation**, and **range** of a UAV (or any RF target source) using:<br>
