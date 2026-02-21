@@ -21,7 +21,7 @@ Parker Reeves<br>
 ---
 
 # Disclaimer
-This guide reflects the 2026 Senior Design team’s understanding at the time of writing. Some steps are hardware/firmware-version dependent (ADI Kuiper, IIO-Scope, MATLAB toolboxes). If anything changes or you find a better approach, **update this README** so the project stays usable.
+This guide reflects the 2026 Senior Design team’s understanding at the time of writing.
 
 ---
 
