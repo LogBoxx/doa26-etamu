@@ -93,8 +93,8 @@ Required MATLAB Toolboxes (install via Add-On Explorer):<br>
 
 ---
 
-# Repository Layout (Update to match the real repo)
-This is the recommended structure. Rename as needed, but keep it organized for the next team.
+# Repository Layout
+still needed.
 
 - `/docs/` – papers, references, lab notes, screenshots, diagrams<br>
 - `/hardware/` – wiring diagrams, array dimensions, photos, pinouts, settings screenshots<br>
@@ -108,17 +108,6 @@ Placeholders currently mentioned:<br>
 - `/demo/ula_demo.m`<br>
 - `/demo/dual_demo.m`<br>
 - `/simulation/2d_plots.m`<br>
-
----
-
-# Quick Start (DoA Side)
-If you only do 5 things, do these:
-
-1. Boot both ZC702 boards into Kuiper Linux and confirm Ethernet connectivity.<br>
-2. Open IIO-Scope and verify the expected sample rate / bandwidth / LO.<br>
-3. Perform **phase synchronization** on FMComms5 (REQUIRED after every power cycle).<br>
-4. Verify phase coherence looks stable (bench test / loopback).<br>
-5. Run MATLAB acquisition + MUSIC processing scripts.<br>
 
 ---
 
@@ -173,11 +162,11 @@ Calibration steps (IIO-Scope):<br>
 # Zynq Board IP Addresses
 Use `ifconfig` (or `ip addr`) on the board to determine its IP address.<br><br>
 
-Observed defaults (your network may differ):<br>
+Defaults:<br>
 A: 192.168.0.1<br>
 B: 192.168.1.1<br><br>
 
-Example host PC static IP config (Linux):<br>
+IP config (Linux):<br>
 `sudo ip addr add 192.168.0.101/24 dev eth0`<br>
 `sudo ip addr add 192.168.1.101/24 dev eth0`<br><br>
 
@@ -185,48 +174,23 @@ Run `ifconfig` (or `ip addr`) to verify.
 
 ---
 
-# How DoA Works (Conceptual – so a new team isn’t lost)
-The receiver array measures the same RF signal at multiple antennas. Because each antenna is at a different position, the signal arrives with a **phase difference** that depends on the incoming direction. DoA algorithms use these phase differences to estimate angle.<br><br>
-
-We use **MUSIC (Multiple Signal Classification)**, which:<br>
+# MUSIC
+The receiver array measures the same RF signal at multiple antennas. Because each antenna is at a different position, the signal arrives with a **phase difference** that depends on the incoming direction. DoA algorithms use these phase differences to estimate angle.<br><br><br>
 - Builds a covariance matrix from multiple snapshots of received data<br>
 - Performs eigen-decomposition to separate **signal subspace** and **noise subspace**<br>
 - Scans candidate angles and finds peaks where the steering vector is most orthogonal to the noise subspace<br><br>
 
-Key point: **If channels are not phase-aligned, MUSIC will lie to you.** Phase sync is non-negotiable.
-
 ---
 
-# Script Usage (Fill in filenames as you finalize)
-## Demo (Hardware)
+# Scripts
+## Demo scrips
 `/demo/uca_demo.m` – placeholder<br>
 `/demo/ula_demo.m` – placeholder<br>
 `/demo/dual_demo.m` – placeholder<br><br>
+`/demo/range_demo.m` – placeholder<br><br>
+`/demo/all_demo.m` – placeholder<br><br>
 
-Recommended behavior for demos (what they should do):<br>
-- Connect to SDR(s)<br>
-- Set sample rate, LO, gain mode, bandwidth<br>
-- Capture N snapshots<br>
-- Run MUSIC scan for azimuth/elevation (depending on array geometry)<br>
-- Plot spectrum + estimated peak(s)<br>
-- Optional: log data to file for offline analysis<br>
-
-## Simulation (Offline)
+## Simus
 `/simulation/2d_plots.m` – placeholder<br><br>
-
-Recommended simulation features (helps debug without hardware):<br>
-- Generate array steering vectors and synthetic signals<br>
-- Inject noise and phase offsets<br>
-- Validate MUSIC peaks match truth<br>
-- Sweep SNR / snapshots / spacing to understand sensitivity<br>
-
----
-
-# Data Collection Recommendations (So results are repeatable)
-When you run experiments, always record:<br>
-- Date + location (indoor/outdoor, multipath notes)<br>
-- Array geometry (element positions, spacing, orientation)<br>
-- SDR settings (LO, sample rate, bandwidth, gains, AGC mode)<br>
-- Number of snapshots and snapshot length<br>
-- Whether phase sync calibration was run (and time since last power cycle)<br>
-- Ground truth angle (even rough, using tape measure + compass + known geometry)<br><br>
+`/simulation/2d_plots.m` – placeholder<br><br>
+`/simulation/2d_plots.m` – placeholder<br><br>
