@@ -5,8 +5,6 @@ This repository documents a hybrid tracking system that estimates **azimuth**, *
 - **Direction-of-Arrival (DoA)** from a phased antenna array + SDRs (MUSIC-based estimation)<br>
 - **Range** from **LiDAR** (when available / integrated)<br><br>
 
-The goal of this README is to let a new team understand the project quickly and reproduce the working setup without hunting through old notes.
-
 ---
 
 # Project Advisors
@@ -37,15 +35,7 @@ Develop a hybrid DoA + range estimation system using synchronized SDR hardware (
 
 ---
 
-# What “Done” Looks Like (Deliverables)
-- Real-time or near-real-time estimation of **azimuth/elevation** (DoA) from an antenna array<br>
-- Range estimate from LiDAR (when integrated)<br>
-- A repeatable setup procedure (sync + calibration + scripts) that a new team can follow<br>
-- Experimental results + presentation for the AFRL SDR University Challenge (if applicable)<br>
-
----
-
-# System Overview (High-Level Architecture)
+# System Overview
 
 ## Inputs
 - RF signal from target (ex: UAV telemetry / beacon / transmitter at 2.4 GHz)<br>
@@ -65,7 +55,7 @@ Antenna Array → FMComms5 (AD9361 x2) → ZC702 (Kuiper Linux) → IIO drivers 
 (2) **AD-FMCOMMS5-EBZ** (Dual AD9361 Evaluation Board)<br>
 (8) Generic **2.4 GHz** monopole omnidirectional antennas<br><br>
 
-Helpful extras (not strictly “required” but realistic):<br>
+Helpful extras
 - SMA coax cables + spares<br>
 - Power supplies for ZC702 boards<br>
 - Ethernet switch or dual NIC host PC<br>
