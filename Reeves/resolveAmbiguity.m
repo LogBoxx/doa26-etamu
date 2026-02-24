@@ -1,3 +1,16 @@
+% ======================================================================= %
+% Script:   resolveAmbiguity
+% Function: 4-element UCA has tendency to attain false azimuth estimations
+%           180 degrees across from true azimuth. To correct, script
+%           inputs current estimation and adds 180 degrees for comparison
+%           to previous estimation. If 180 shift is closer to previous
+%           estimation, it is used. Otherwise, current estimation is
+%           accepted instead.
+% Notes:    
+% Author:   Parker Reeves
+% Date:     02/13/2026
+% ======================================================================= %
+
 function theta_corrected = resolveAmbiguity(theta_est, theta_prev)
 
 % Generate both possible candidates
