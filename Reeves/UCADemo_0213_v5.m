@@ -13,7 +13,7 @@
 % Author:   Parker Reeves
 % Date:     02/13/2026
 % ======================================================================= %
-clear; clc;
+clear all; clc;
 
 % ========================= ARRAY INITIALIZATION ======================== %
 
@@ -28,6 +28,12 @@ prev_DOA = 0; % Inizialize resolveAmbiguity function
 % Antenna positions (UCA)
 n_idx = (0:N-1)';
 phi_n = 2 * pi * n_idx / N; % Angular positions of sensors
+
+
+
+r = raspi('169.254.52.8','analog','analog');
+s_az = servo(r, 13, 'MinPulseDuration', 5.44e-4, 'MaxPulseDuration', 2.40e-3);
+s_el = servo(r, 12, 'MinPulseDuration', 5.44e-4, 'MaxPulseDuration', 2.40e-3); 
 
 % ========================= SIGNAL RECEPTION ============================ %
 
@@ -73,9 +79,9 @@ while true
 
     est_DOA = angles(max_idx);
     
-    theta_corrected = resolveAmbiguity(est_DOA, prev_DOA);
+    %theta_corrected = resolveAmbiguity(est_DOA, prev_DOA);
 
-    fprintf('Estimated DOA: %.2f°\n', theta_corrected);
+    fprintf('Estimated DOA: %.2f°\n', est_DOA);
 
     plot(angles, 10*log10(abs(spectrum)), 'LineWidth', 2, 'Color', [0 0.447 0.741]);
     grid on; hold on;
@@ -85,8 +91,8 @@ while true
     xlim([0 360]);
     hold off
 
-    prev_DOA = theta_corrected;
+    %prev_DOA = theta_corrected;
 
-    pause(0.2)
-
+     pause(0.2)
+    get_range_v3(r,est_DOA,10,s_az,s_el);
 end
