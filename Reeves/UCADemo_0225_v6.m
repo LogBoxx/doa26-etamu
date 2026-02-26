@@ -1,0 +1,113 @@
+% ======================================================================= %
+% Script:   UCADemo_0213_v5
+% Function: Version five includes FB averaging along with hardcode
+%           ambigiuity correction along with math corrections
+% Notes:    (1) FB averaging enforces conjugate symmetry within the
+%           covariance matrix. Normally, FB includes an identity matrix;
+%           for the UCA, the top two and bottom two rows of this identity
+%           matrix must be flipped. Ask someone smarter why this is the
+%           case.
+%           (2) Requires resolveAmbiguity function. This function accounts for
+%           ambiguities arising when azimuth estimations produce false
+%           readings 180 degrees from true azimuth.
+%           (3) Runs 100 trials to gain average and standard deviation
+%           results
+% Author:   Parker Reeves
+% Date:     02/25/2026
+% ======================================================================= %
+clear; clc;
+tic
+
+% ========================= ARRAY INITIALIZATION ======================== %
+
+N = 4;                  % Number of antennas
+c = 3e8;                % Speed of light
+f = 2.4e9;              % Operating Frequency
+lambda = c/f;           % Operating Wavelength
+
+R_radius = lambda / (2*sqrt(2)); % Radius of the circular array !!!
+prev_DOA = 0; % Inizialize resolveAmbiguity function
+numtrials = 100;
+std_m = zeros(size(numtrials));
+
+% Antenna positions (UCA)
+n_idx = (0:N-1)';
+phi_n = 2 * pi * n_idx / N; % Angular positions of sensors
+
+% ========================= SIGNAL RECEPTION ============================ %
+
+Y = adi.FMComms5.Rx('uri','ip:192.168.0.101');
+Y.EnabledChannels = [1 2 3 4];
+
+for g = 1:numtrials
+
+    X = Y();
+    X = X';             % Correction to IQ matrix dimensions
+
+    R_x = (X * X') / size(X,2);
+
+    % Forward backward averaging
+    J = [0 0 1 0; 0 0 0 1; 1 0 0 0; 0 1 0 0];
+    R_fb = 0.5 * (R_x + J * conj(R_x) * J);
+
+    [U, D] = eig(R_fb);      % Eigen-decomposition
+    [~, idx] = sort(diag(D), 'descend');
+    U = U(:, idx);
+
+    % Noise subspace (For 1 source, columns 2 to N)
+    En = U(:, 2:end);
+
+% ======================== MUSIC SPECTRUM SEARCH ======================== %
+    angles = 0:0.1:359.9;
+    spectrum = zeros(size(angles));
+
+    for i = 1:length(angles)
+        theta_test = deg2rad(angles(i));
+        % Steering vector for the search angle
+        a_theta = exp(1j * 2 * pi * R_radius / lambda * cos(theta_test - phi_n));
+
+        % MUSIC pseudo-spectrum formula
+        spectrum(i) = 1 / real((a_theta' * (En * En') * a_theta));
+    end
+
+% =========================== VISUALIZATION ============================= %
+
+    [~, max_idx] = max(10*log10(abs(spectrum)));
+
+    est_DOA = angles(max_idx);
+    
+    theta_corrected = resolveAmbiguity(est_DOA, prev_DOA); % correction for 180 ambiguity flips
+
+    std_m(g) = theta_corrected;
+
+    fprintf('Estimated DOA: %.2f°\n', theta_corrected);
+
+    plot(angles, 10*log10(abs(spectrum)), 'LineWidth', 2, 'Color', [0 0.447 0.741]);
+    grid on; hold on;
+    title('UCA MUSIC Spectrum (Direct Element Space)');
+    xlabel('Azimuth Angle (degrees)');
+    ylabel('Pseudo-spectrum (dB)');
+    xlim([0 360]);
+    hold off
+
+    prev_DOA = theta_corrected;
+
+    pause(0.01)
+
+end
+
+john_wrap = deg2rad(std_m);
+mu = atan2(mean(sin(john_wrap)), mean(cos(john_wrap)));
+R = hypot(mean(cos(john_wrap)), mean(sin(john_wrap)));
+mu_deg = mod(rad2deg(mu), 360);
+
+ste_x = mean(mu_deg);
+john_sigma = sqrt(-2*log(R));
+std_x = rad2deg(john_sigma);
+
+
+%x1 = 360 - ste_x;
+fprintf('Final Average Est. %.2f°\n', ste_x);
+fprintf('Final Standard Deviation %.2f°\n', std_x)
+
+toc
