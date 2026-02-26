@@ -34,6 +34,11 @@ std_m = zeros(size(numtrials));
 n_idx = (0:N-1)';
 phi_n = 2 * pi * n_idx / N; % Angular positions of sensors
 
+
+r = raspi('169.254.52.8','analog','analog');
+s_az = servo(r, 13, 'MinPulseDuration', 5.44e-4, 'MaxPulseDuration', 2.40e-3);
+s_el = servo(r, 12, 'MinPulseDuration', 5.44e-4, 'MaxPulseDuration', 2.40e-3); 
+
 % ========================= SIGNAL RECEPTION ============================ %
 
 Y = adi.FMComms5.Rx('uri','ip:192.168.0.101');
@@ -93,7 +98,7 @@ for g = 1:numtrials
     prev_DOA = theta_corrected;
 
     pause(0.01)
-
+    get_range_v3(r,theta_corrected,10,s_az,s_el);
 end
 
 john_wrap = deg2rad(std_m);
