@@ -44,7 +44,7 @@ while true
     spectrum_2 = zeros(size(phi_scan));
     spectrum_1 = zeros(size(theta_scan));
 
-    X_1 = Y_2();
+    X_1 = Y_1();
     X_1 = X_1';             % Correction to IQ matrix dimensions
 
     X_2 = Y_2();
