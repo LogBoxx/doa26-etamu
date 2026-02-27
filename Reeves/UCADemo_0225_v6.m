@@ -29,15 +29,17 @@ R_radius = lambda / (2*sqrt(2)); % Radius of the circular array !!!
 prev_DOA = 0; % Inizialize resolveAmbiguity function
 numtrials = 100;
 std_m = zeros(size(numtrials));
+rtd_m = zeros(size(numtrials));
 
 % Antenna positions (UCA)
 n_idx = (0:N-1)';
 phi_n = 2 * pi * n_idx / N; % Angular positions of sensors
+phi_n = circshift(phi_n, 1);
 
 
-r = raspi('169.254.52.8','analog','analog');
-s_az = servo(r, 13, 'MinPulseDuration', 5.44e-4, 'MaxPulseDuration', 2.40e-3);
-s_el = servo(r, 12, 'MinPulseDuration', 5.44e-4, 'MaxPulseDuration', 2.40e-3); 
+% r = raspi('169.254.52.8','analog','analog');
+% s_az = servo(r, 13, 'MinPulseDuration', 5.44e-4, 'MaxPulseDuration', 2.40e-3);
+% s_el = servo(r, 12, 'MinPulseDuration', 5.44e-4, 'MaxPulseDuration', 2.40e-3); 
 
 % ========================= SIGNAL RECEPTION ============================ %
 
@@ -50,6 +52,9 @@ for g = 1:numtrials
     X = X';             % Correction to IQ matrix dimensions
 
     R_x = (X * X') / size(X,2);
+
+    esp_dl = 1e-3 * trace(R_x)/size(R_x,1);
+    R_x = R_x + esp_dl*eye(N);
 
     % Forward backward averaging
     J = [0 0 1 0; 0 0 0 1; 1 0 0 0; 0 1 0 0];
@@ -70,9 +75,10 @@ for g = 1:numtrials
         theta_test = deg2rad(angles(i));
         % Steering vector for the search angle
         a_theta = exp(1j * 2 * pi * R_radius / lambda * cos(theta_test - phi_n));
+        a_theta = a_theta / norm(a_theta);
 
         % MUSIC pseudo-spectrum formula
-        spectrum(i) = 1 / real((a_theta' * (En * En') * a_theta));
+        spectrum(i) = 1 / abs((a_theta' * (En * En') * a_theta));
     end
 
 % =========================== VISUALIZATION ============================= %
@@ -98,7 +104,8 @@ for g = 1:numtrials
     prev_DOA = theta_corrected;
 
     pause(0.01)
-    get_range_v3(r,theta_corrected,10,s_az,s_el);
+    %range = get_range_v3(r,theta_corrected,10,s_az,s_el);
+    %rtd_m(g) = range;
 end
 
 john_wrap = deg2rad(std_m);
@@ -109,10 +116,12 @@ mu_deg = mod(rad2deg(mu), 360);
 ste_x = mean(mu_deg);
 john_sigma = sqrt(-2*log(R));
 std_x = rad2deg(john_sigma);
+str_x = mean(rtd_m);
 
 
 %x1 = 360 - ste_x;
 fprintf('Final Average Est. %.2f°\n', ste_x);
 fprintf('Final Standard Deviation %.2f°\n', std_x)
+%fprintf('Final Range %.2f', str_x)
 
 toc
