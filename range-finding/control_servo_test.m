@@ -13,8 +13,13 @@ r = raspi('169.254.52.8','analog','analog');
 
 % 4) Sweep example
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 for ang = 0:5:160
     get_range_v1(r,ang,170,dev,s_az,s_el)
+=======
+for ang = 0:20:360
+    get_range_v4(r,ang,170,s_az,s_el,10);
+>>>>>>> Stashed changes
 =======
 for ang = 0:20:360
     get_range_v4(r,ang,170,s_az,s_el,10);
