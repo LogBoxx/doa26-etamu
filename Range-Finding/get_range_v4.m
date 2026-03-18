@@ -1,27 +1,59 @@
-% File: get_range_v3.m
+% File: get_range_v4.m
 % Requires: MATLAB Support Package for Raspberry Pi Hardware
 % Usage:
 
-function [dist_cm, strength] = get_range_v3(r, azimuth,elevation,s_az,s_el)
+function [dist_cm, strength] = get_range_v4(r, azimuth, elevation, s_az, s_el, max_step)
+%get_range_v4  Read TF02-Pro and position the servos safely
+%   [dist_cm,strength] = get_range_v4(r, azimuth, elevation, s_az,
+%   s_el) moves the azimuth/elevation servos and reads from the TF02-Pro
+%   ranging module.  azimuth is expected in degrees (0–359) even though the
+%   physical azimuth servo only covers 0–180; the mapping below converts the
+%   “wrapped” user angle to the correct servo position.  When elevation is
+%   outside the allowed range it is clamped.
+%
+%   An optional sixth argument, max_step, limits how far the azimuth input
+%   may change on each call.  This prevents the servo from trying to jump
+%   across large spans or flip direction when crossing the 0/360 boundary.
+%   If omitted a conservative default of 10° is used.
+
+% track the previous input so that we can restrict the movement amount
+persistent prevAz;
+
+if nargin < 6 || isempty(max_step)
+    max_step = 10;    % degrees per invocation (tune as needed)
+end
+
+if isempty(prevAz)
+    % first call, just remember the value
+    prevAz = azimuth;
+else
+    % compute signed minimal difference on the circle
+    diff = mod(azimuth - prevAz + 180, 360) - 180;
+    if abs(diff) > max_step
+        % step only in the direction of 'diff'
+        azimuth = prevAz + sign(diff)*max_step;
+        azimuth = mod(azimuth, 360);
+    end
+    prevAz = azimuth;
+end
 
 %% Move servos to desired position (with constraints)
 mapped = zeros(size(azimuth));     % preallocate
-
-% Valid region 1: 270–359
-idx1 = (azimuth >= 270 & azimuth <= 359);
+idx1 = (azimuth >= 270 & azimuth <= 359); % Valid region 1: 270–359
 mapped(idx1) = azimuth(idx1) - 270;
+idx2 = (azimuth >= 0 & azimuth <= 90); % Valid region 2: 0–89
+mapped(idx2) = azimuth(idx2) + 90; 
+idx1_invalid = (azimuth < 270 & azimuth >= 180); % mid‑zone – hold at 0
+mapped(idx1_invalid) = 0;
+idx2_invalid = ~(idx1 | idx2 | idx1_invalid);
+mapped(idx2_invalid) = 179;
 
-% Valid region 2: 0–89
-idx2 = (azimuth >= 0 & azimuth <= 90);
-mapped(idx2) = azimuth(idx2) + 90;
 
-% Everything else → hold at 180
-idx_invalid = ~(idx1 | idx2);
-mapped(idx_invalid) = 179;
+
 
 azimuth = mapped;
 
-% Keep your elevation constraints as-is
+
 if elevation < 110
     elevation = 110;
 elseif elevation > 175

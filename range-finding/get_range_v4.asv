@@ -1,27 +1,30 @@
-% File: get_range_v3.m
+% File: get_range_v4.m
 % Requires: MATLAB Support Package for Raspberry Pi Hardware
 % Usage:
 
-function [dist_cm, strength] = get_range_v3(r, azimuth,elevation,s_az,s_el)
+function [dist_cm, strength] = get_range_v4(r, azimuth,elevation,s_az,s_el)
+
+persistent last_az
 
 %% Move servos to desired position (with constraints)
 mapped = zeros(size(azimuth));     % preallocate
-
-% Valid region 1: 270–359
-idx1 = (azimuth >= 270 & azimuth <= 359);
+idx1 = (azimuth >= 270 & azimuth <= 359); % Valid region 1: 270–359
 mapped(idx1) = azimuth(idx1) - 270;
+idx2 = (azimuth >= 0 & azimuth <= 90); % Valid region 2: 0–89
+mapped(idx2) = azimuth(idx2) + 90; 
+idx1_invalid = (azimuth < 270 & azimuth >= 180); % Everything else → hold at 180
+mapped(idx1_invalid) = 0;
+idx2_invalid = ~(idx1 | idx2 | idx1_invalid);
+mapped(idx2_invalid) = 179;
 
-% Valid region 2: 0–89
-idx2 = (azimuth >= 0 & azimuth <= 90);
-mapped(idx2) = azimuth(idx2) + 90;
+if abs(last_az - mapped) > 10
+    if last_az - mapped > 0
+        mapped = last_az + 10;
 
-% Everything else → hold at 180
-idx_invalid = ~(idx1 | idx2);
-mapped(idx_invalid) = 179;
 
 azimuth = mapped;
+last_az = mapped;
 
-% Keep your elevation constraints as-is
 if elevation < 110
     elevation = 110;
 elseif elevation > 175
