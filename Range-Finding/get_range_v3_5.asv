@@ -1,0 +1,120 @@
+% File: get_range_v3.m
+% Requires: MATLAB Support Package for Raspberry Pi Hardware
+% Usage:
+
+function [dist_cm, strength] = get_range_v3_5(r, azimuth,elevation,s_az,s_el)
+
+%% Variables
+persistent last_az;
+persistent last_el;
+persistent hold_toggle;
+lower_el = 0;
+upper_el = 70;
+lower_az = 30;
+upper_az = 179;
+max_move = 10;
+if isempty(last_az)
+     last_az = lower_az;
+end
+if isempty(last_el)
+     last_el = lower_el;
+end
+%% Move servos to desired position (with constraints)  
+
+mapped = azimuth + 90;
+
+if mapped > upper_az
+    mapped = upper_az;
+    hold_toggle = 1;
+elseif mapped < lower_az
+    mapped = lower_az;
+    hold_toggle = 1;
+else
+    hold_toggle = 0;
+end 
+if elevation > upper_az
+    mapped = upper_az;
+    hold_toggle = 1;
+elseif mapped < lower_az
+    mapped = lower_az;
+    hold_toggle = 1;
+else
+    hold_toggle = 0;
+end 
+
+azimuth = mapped;
+if hold_toggle == 0
+    if (abs(azimuth - last_az) > max_move)
+        if (azimuth - last_az) > 0
+            azimuth = last_az + max_move;
+        elseif (azimuth - last_az) < 0
+            azimuth = last_az - max_move;
+        end
+    end 
+elseif hold_toggle == 1
+    azimuth = last_az;
+end
+
+
+    if (abs(elevation - last_el) > max_move)
+        if (elevation - last_el) > 0
+            elevation = last_el + max_move;
+        elseif (elevation - last_az) < 0
+            elevation = last_el - max_move;
+        end
+    end 
+
+    % Set servo positions
+writePosition(s_az, azimuth);
+writePosition(s_el, elevation);
+last_az = azimuth;
+last_el = elevation;
+%% TF02-Pro UART Read
+try
+    dev = serialdev(r, '/dev/serial0', 115200, 8, 'none', 1);
+    dev.Timeout = 0.1;
+
+    % read(dev,256,'uint8');
+  
+    % Read 2–3 frames worth of data at once (burst read)
+    raw = read(dev, 19, 'uint8');   % 27 bytes = 3 frames (3×9)
+    idx = strfind(raw(:).', [0x59 0x59]);    % Find first header 0x59 0x59
+
+    if isempty(idx)
+        fprintf("No header found.\n");
+        clear dev; clear r;
+        r = raspi('169.254.52.8','analog','analog');
+        dev = serialdev(r, '/dev/serial0', 115200, 8, 'none', 1);
+        dev.Timeout = 0.1;
+        raw = read(dev, 19, 'uint8'); 
+        idx = strfind(raw(:).', [0x59 0x59]);
+    end
+    if isempty(idx)
+        fprintf("DoAing Capstone Day")
+        return;
+    end 
+
+    % Extract exactly one 9‑byte frame
+    start = idx(1);
+    if start+8 > length(raw)
+        fprintf("Incomplete frame.\n");
+        return;
+    end
+    
+    rest = raw(start+2:start+8);
+    
+    % Decode TF02 9‑byte format
+    
+    % [0]=59 [1]=59 [2]=Dist_L [3]=Dist_H [4]=Str_L [5]=Str_H [6]=Temp_L [7]=Temp_H [8]=CS
+    dist_cm = double(rest(1)) + bitshift(double(rest(2)), 8);
+    strength = double(rest(3)) + bitshift(double(rest(4)), 8);
+    temp_raw = double(rest(5)) + bitshift(double(rest(6)), 8);
+    temp_C   = temp_raw/8 - 256;   % from TF02 manual
+    
+    fprintf("Dist = %.1f cm   Strength = %d   Temp = %.1f C\n", dist_cm, strength, temp_C); 
+    
+ catch exception
+    fprintf('%s\n', exception.message);
+end
+    clear dev;
+end
