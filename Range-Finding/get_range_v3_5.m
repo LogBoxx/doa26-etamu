@@ -4,25 +4,67 @@
 
 function [dist_cm, strength] = get_range_v3_5(r, azimuth,elevation,s_az,s_el)
 
+%% Variables
+persistent last_az;
+persistent last_el;
+persistent hold_toggle;
+lower_el = 0;
+upper_el = 70;
+lower_az = 30;
+upper_az = 179;
+max_move = 10;
+if isempty(last_az)
+     last_az = lower_az;
+end
+if isempty(last_el)
+     last_el = lower_el;
+end
 %% Move servos to desired position (with constraints)  
 
-% Map valid region: -90 to 90  -->  0 to 180
-mapped = 179 * ones(size(azimuth));   % default hold value (like your 179)
-idx = (azimuth >= -90 & azimuth <= 90);
-mapped(idx) = azimuth(idx) + 90;      % -90->0, 0->90, 90->180
+mapped = azimuth + 90;
+
+if mapped > upper_az
+    mapped = upper_az;
+    hold_toggle = 1;
+elseif mapped < lower_az
+    mapped = lower_az;
+    hold_toggle = 1;
+else
+    hold_toggle = 0;
+end 
+if elevation > upper_el
+    elevation = upper_el;
+elseif elevation < lower_el
+    elevation = lower_el;
+end 
 
 azimuth = mapped;
-
-% Keep your elevation constraints as-is
-if elevation < 110
-    elevation = 110;
-elseif elevation > 175
-    elevation = 175;
+if hold_toggle == 0
+    if (abs(azimuth - last_az) > max_move)
+        if (azimuth - last_az) > 0
+            azimuth = last_az + max_move;
+        elseif (azimuth - last_az) < 0
+            azimuth = last_az - max_move;
+        end
+    end 
+elseif hold_toggle == 1
+    azimuth = last_az;
 end
 
+
+    if (abs(elevation - last_el) > max_move)
+        if (elevation - last_el) > 0
+            elevation = last_el + max_move;
+        elseif (elevation - last_az) < 0
+            elevation = last_el - max_move;
+        end
+    end 
+
     % Set servo positions
-    writePosition(s_az, azimuth);
-    writePosition(s_el, elevation);
+writePosition(s_az, azimuth);
+writePosition(s_el, elevation);
+last_az = azimuth;
+last_el = elevation;
 %% TF02-Pro UART Read
 try
     dev = serialdev(r, '/dev/serial0', 115200, 8, 'none', 1);
@@ -33,7 +75,7 @@ try
     % Read 2–3 frames worth of data at once (burst read)
     raw = read(dev, 19, 'uint8');   % 27 bytes = 3 frames (3×9)
     idx = strfind(raw(:).', [0x59 0x59]);    % Find first header 0x59 0x59
-    
+
     if isempty(idx)
         fprintf("No header found.\n");
         clear dev; clear r;
