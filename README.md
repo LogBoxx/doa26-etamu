@@ -17,7 +17,7 @@ The result is a full position estimate in spherical coordinates: azimuth, elevat
 
 ## How the signal chain works
 
-A USRP-2901 controlled by a Raspberry Pi transmits a continuous 2.4 GHz tone. The antenna arrays pick it up, the FMComms5 boards digitize it, and MATLAB runs the DoA estimation on the host PC. Once angles are computed they get sent to a second Raspberry Pi that drives the pan-tilt servos and reads back distance from the TF-02 LiDAR.
+A USRP B200mini controlled by a Raspberry Pi transmits a continuous 2.4 GHz tone. The antenna arrays pick it up, the FMComms5 boards digitize it, and MATLAB runs the DoA estimation on the host PC. Once angles are computed they get sent to a second Raspberry Pi that drives the pan-tilt servos and reads back distance from the TF-02 LiDAR.
 
 ```
 USRP TX (RPi 4) → [RF propagation] → Antenna Array
