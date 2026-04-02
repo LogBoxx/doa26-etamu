@@ -1,7 +1,7 @@
 % File: control_servo_test_v5_5.m
 % Purpose: Hardware demo for get_range_v5_5 with plotting and status display.
 
-clear;
+clear all;
 clc;
 
 r = raspi('169.254.52.8', 'analog', 'analog');
@@ -15,13 +15,15 @@ end
 
 % Optional tuning overrides (leave empty struct to use defaults in get_range_v5_5)
 opts = struct();
+% Example override:
+% opts.max_move_az = 8; opts.max_move_el = 6;
 
 % Reset persistent state between runs
 get_range_v5_5('reset');
 
-N = 120;
+N = 50;
 dt = 0.05;
-noise_az = 2.0;
+noise_az = 12.0;
 noise_el = 2.0;
 
 az_in_log = zeros(1, N);
@@ -46,6 +48,7 @@ fprintf('Starting v5.5 tracking demo for %d steps...\n', N);
 fprintf('Step | az_in el_in | cmd_az cmd_el | dist strength conf frame_ok\n');
 
 for k = 1:N
+    % Demo source estimate (replace with your estimator stream).
     az_in = 65 * sin(2*pi*k/80) + 8 * sin(2*pi*k/23) + noise_az * randn();
     el_in = 35 * sin(2*pi*k/90 + 0.5) + 30 + noise_el * randn();
 
@@ -69,6 +72,7 @@ for k = 1:N
     pause(dt);
 end
 
+% Plot source request, clamped target, servo command, and LiDAR outputs.
 figure('Color', 'w', 'Name', 'v5.5 Source vs Servo + LiDAR');
 t = 1:N;
 

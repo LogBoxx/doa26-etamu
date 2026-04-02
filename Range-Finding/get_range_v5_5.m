@@ -22,6 +22,7 @@ status = struct();
 if nargin >= 1 && (ischar(r) || isstring(r))
     cmd = lower(string(r));
     if cmd == "reset"
+        % Reset both tracker state and UART handle state.
         tracker_state = [];
         conf_state = [];
         t0 = [];
@@ -50,6 +51,7 @@ if isempty(t0)
     last_t = 0;
 end
 
+% Monotonic time base for regression even if loop jitter occurs.
 t_now = toc(t0);
 if t_now <= last_t
     t_now = last_t + 1e-3;
@@ -59,6 +61,7 @@ last_t = t_now;
 [tracker_state, cmd_az, cmd_el, track_status] = tracker_step_v5_5( ...
     tracker_state, azimuth, elevation, t_now, opts, conf_state);
 
+% Hardware command output (degrees in your current servo setup).
 writePosition(s_az, cmd_az);
 writePosition(s_el, cmd_el);
 
@@ -91,7 +94,8 @@ opts.lower_az = 10;
 opts.upper_az = 169;
 opts.lower_el = 15;
 opts.upper_el = 70;
-opts.max_move = 10;
+opts.max_move_az = 10;
+opts.max_move_el = 5;
 
 % Prediction model
 opts.window_size = 6;
@@ -108,8 +112,8 @@ opts.conf_fail_decay = 0.80;
 opts.conf_ema_keep = 0.70;
 
 % Strength-to-confidence mapping
-opts.strength_min = 50;
-opts.strength_max = 2000;
+opts.strength_min = 1500;
+opts.strength_max = 15000;
 
 % UART settings
 opts.serial_port = '/dev/serial0';

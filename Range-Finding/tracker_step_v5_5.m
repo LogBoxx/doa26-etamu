@@ -3,6 +3,7 @@
 
 function [state, cmd_az, cmd_el, status] = tracker_step_v5_5(state, az_in, el_in, t_now, opts, conf_in)
 
+% Initialize state on first call.
 if isempty(state)
     state.last_az = opts.lower_az;
     state.last_el = opts.lower_el;
@@ -13,6 +14,7 @@ if isempty(state)
 end
 
 status = struct();
+% Treat NaN/Inf estimator outputs as invalid measurements.
 status.measurement_valid = isfinite(az_in) && isfinite(el_in);
 status.hold_azimuth = false;
 status.used_prediction = false;
@@ -22,10 +24,12 @@ status.az_pred = NaN;
 status.el_pred = NaN;
 
 if ~status.measurement_valid
+    % Fall back to last command when estimator values are invalid.
     mapped = state.last_az;
     el_meas = state.last_el;
     status.used_prediction = true;
 else
+    % Keep existing azimuth mapping convention.
     mapped = az_in + 90;
     if mapped > opts.upper_az
         mapped = opts.upper_az;
@@ -83,6 +87,7 @@ end
 pred_az = min(max(pred_az, opts.lower_az), opts.upper_az);
 pred_el = min(max(pred_el, opts.lower_el), opts.upper_el);
 
+% Confidence-adaptive blend between raw measurement and model prediction.
 blend_alpha = opts.alpha_lo + (opts.alpha_hi - opts.alpha_lo) * conf_in;
 blend_alpha = min(max(blend_alpha, opts.alpha_lo), opts.alpha_hi);
 status.blend_alpha = blend_alpha;
@@ -94,21 +99,23 @@ cmd_az = az_target;
 if status.hold_azimuth
     cmd_az = state.last_az;
 else
-    if abs(cmd_az - state.last_az) > opts.max_move
+    % Apply azimuth slew-rate limit.
+    if abs(cmd_az - state.last_az) > opts.max_move_az
         if (cmd_az - state.last_az) > 0
-            cmd_az = state.last_az + opts.max_move;
+            cmd_az = state.last_az + opts.max_move_az;
         else
-            cmd_az = state.last_az - opts.max_move;
+            cmd_az = state.last_az - opts.max_move_az;
         end
     end
 end
 
 cmd_el = el_target;
-if abs(cmd_el - state.last_el) > opts.max_move
+% Apply elevation slew-rate limit.
+if abs(cmd_el - state.last_el) > opts.max_move_el
     if (cmd_el - state.last_el) > 0
-        cmd_el = state.last_el + opts.max_move;
+        cmd_el = state.last_el + opts.max_move_el;
     else
-        cmd_el = state.last_el - opts.max_move;
+        cmd_el = state.last_el - opts.max_move_el;
     end
 end
 

@@ -17,6 +17,7 @@ status = struct( ...
 if nargin >= 3
     cmd = lower(string(command));
     if cmd == "reset"
+        % Drop UART handle so next read forces reopen.
         dev = [];
         status.message = "LiDAR UART state reset";
         return;
@@ -30,6 +31,7 @@ end
 
 for attempt = 0:opts.serial_max_retries
     if isempty(dev)
+        % Reuse one persistent serial handle for lower latency.
         [dev, open_ok] = open_dev(r, opts);
         if ~open_ok
             status.message = "Failed to open serial device";
@@ -59,6 +61,7 @@ for attempt = 0:opts.serial_max_retries
     end
 
     status.message = frame_status.message;
+    % Reopen on next attempt after invalid/incomplete frame sequence.
     dev = [];
 end
 end
@@ -98,6 +101,7 @@ for k = 1:numel(idx)
     end
 
     frame = raw(start_idx:start_idx+8);
+    % TF02 checksum is sum of first 8 bytes modulo 256.
     expected_cs = mod(sum(double(frame(1:8))), 256);
     if expected_cs ~= double(frame(9))
         continue;
