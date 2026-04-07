@@ -39,6 +39,8 @@ else
         status.hold_azimuth = true;
     end
 
+    % Apply configured elevation offset before clamping.
+    el_in = el_in + opts.el_offset;
     if el_in > opts.upper_el
         el_meas = opts.upper_el;
     elseif el_in < opts.lower_el

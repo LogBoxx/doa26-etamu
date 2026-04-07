@@ -17,6 +17,7 @@ end
 opts = struct();
 % Example override:
 % opts.max_move_az = 8; opts.max_move_el = 6;
+% opts.el_offset = -2; % degrees added to each elevation input before clamp.
 
 % Reset persistent state between runs
 get_range_v5_5('reset');
@@ -38,7 +39,6 @@ dist_log = NaN(1, N);
 strength_log = NaN(1, N);
 conf_log = NaN(1, N);
 frame_ok_log = false(1, N);
-
 lower_az = 10;
 upper_az = 169;
 lower_el = 15;
@@ -57,9 +57,9 @@ for k = 1:N
     az_in_log(k) = az_in;
     el_in_log(k) = el_in;
     az_src_unclamped_log(k) = az_in + 90;
-    el_src_unclamped_log(k) = el_in;
+    el_src_unclamped_log(k) = el_in + status.options.el_offset;
     az_src_clamped_log(k) = min(max(az_in + 90, lower_az), upper_az);
-    el_src_clamped_log(k) = min(max(el_in, lower_el), upper_el);
+    el_src_clamped_log(k) = min(max(el_in + status.options.el_offset, lower_el), upper_el);
     az_cmd_log(k) = cmd_az;
     el_cmd_log(k) = cmd_el;
     dist_log(k) = dist_cm;

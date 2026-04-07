@@ -94,6 +94,7 @@ opts.lower_az = 10;
 opts.upper_az = 169;
 opts.lower_el = 15;
 opts.upper_el = 70;
+opts.el_offset = 0;
 opts.max_move_az = 10;
 opts.max_move_el = 5;
 
