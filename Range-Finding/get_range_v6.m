@@ -23,8 +23,8 @@
 %     [dist_cm, strength, cmd_az, cmd_el, status] = ...
 %         get_range_v6(r, az_in, el_in, s_az, s_el, opts);
 % 
-%     fprintf('az_in=%.2f el_in=%.2f cmd_az=%.2f cmd_el=%.2f dist=%.1f str=%d no_action=%d\n', ...
-%         az_in, el_in, cmd_az, cmd_el, dist_cm, strength, status.track.no_action);
+%     fprintf('az_in=%.2f el_in=%.2f cmd_az=%.2f cmd_el=%.2f dist=%.1f str=%d hold_az=%d hold_el=%d\n', ...
+%         az_in, el_in, cmd_az, cmd_el, dist_cm, strength, status.track.no_action_az, status.track.no_action_el);
 % 
 %     pause(0.05);
 % end
@@ -84,9 +84,11 @@ last_t = t_now;
 [tracker_state, cmd_az, cmd_el, track_status] = tracker_step_v6( ...
     tracker_state, azimuth, elevation, t_now, opts, conf_state);
 
-% Send servo commands only when tracker permits action.
-if ~track_status.no_action
+% Send each servo command only when that axis is permitted.
+if ~track_status.no_action_az
     writePosition(s_az, cmd_az);
+end
+if ~track_status.no_action_el
     writePosition(s_el, cmd_el);
 end
 
