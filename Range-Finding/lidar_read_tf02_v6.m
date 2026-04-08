@@ -11,6 +11,10 @@ status = struct( ...
     'frame_ok', false, ...
     'checksum_ok', false, ...
     'reconnected', false, ...
+    'bytes_available', NaN, ...
+    'bytes_discarded', 0, ...
+    'bytes_read', 0, ...
+    'valid_frames_in_burst', 0, ...
     'temp_c', NaN, ...
     'message', "");
 
@@ -43,16 +47,34 @@ for attempt = 0:opts.serial_max_retries % opts.serial_max_retries: reconnect att
     end
 
     try
-        raw = read(dev, opts.serial_burst_bytes, 'uint8'); % opts.serial_burst_bytes: bytes requested per read burst
+        % Drain old backlog so we track current frames, not stale buffered ones.
+        bytes_avail = get_num_bytes_available(dev);
+        status.bytes_available = bytes_avail;
+        discard_n = 0;
+        if bytes_avail > opts.serial_keep_latest_bytes % opts.serial_keep_latest_bytes: keep newest bytes, discard older backlog
+            discard_n = bytes_avail - opts.serial_keep_latest_bytes;
+            read(dev, discard_n, 'uint8');
+        end
+        status.bytes_discarded = discard_n;
+
+        bytes_avail_post = get_num_bytes_available(dev);
+        if bytes_avail_post > 0
+            n_read = max(opts.serial_burst_bytes, min(bytes_avail_post, opts.serial_max_read_bytes)); % opts.serial_burst_bytes/opts.serial_max_read_bytes: adaptive read length
+        else
+            n_read = opts.serial_burst_bytes; % opts.serial_burst_bytes: baseline burst read when available count is unknown
+        end
+        raw = read(dev, n_read, 'uint8');
+        status.bytes_read = n_read;
     catch read_ex
         status.message = string(read_ex.message);
         dev = [];
         continue;
     end
 
-    [dist_cm, strength, frame_status] = parse_first_valid_frame(raw);
+    [dist_cm, strength, frame_status] = parse_latest_valid_frame(raw);
     status.checksum_ok = frame_status.checksum_ok;
     status.temp_c = frame_status.temp_c;
+    status.valid_frames_in_burst = frame_status.valid_frames_in_burst;
 
     if frame_status.frame_ok
         status.frame_ok = true;
@@ -78,10 +100,10 @@ catch
 end
 end
 
-function [dist_cm, strength, status] = parse_first_valid_frame(raw)
+function [dist_cm, strength, status] = parse_latest_valid_frame(raw)
 dist_cm = NaN;
 strength = NaN;
-status = struct('frame_ok', false, 'checksum_ok', false, 'temp_c', NaN, 'message', "No valid frame");
+status = struct('frame_ok', false, 'checksum_ok', false, 'temp_c', NaN, 'message', "No valid frame", 'valid_frames_in_burst', 0);
 
 if isempty(raw) || numel(raw) < 9
     status.message = "Insufficient bytes";
@@ -94,6 +116,7 @@ if isempty(idx)
     return;
 end
 
+last_valid_frame = [];
 for k = 1:numel(idx)
     start_idx = idx(k);
     if start_idx + 8 > numel(raw)
@@ -107,16 +130,37 @@ for k = 1:numel(idx)
         continue;
     end
 
-    status.frame_ok = true;
-    status.checksum_ok = true;
+    last_valid_frame = frame;
+    status.valid_frames_in_burst = status.valid_frames_in_burst + 1;
+end
 
-    dist_cm = double(frame(3)) + bitshift(double(frame(4)), 8);
-    strength = double(frame(5)) + bitshift(double(frame(6)), 8);
-    temp_raw = double(frame(7)) + bitshift(double(frame(8)), 8);
-    status.temp_c = temp_raw / 8 - 256;
-    status.message = "OK";
+if isempty(last_valid_frame)
+    status.message = "Header found but checksum invalid";
     return;
 end
 
-status.message = "Header found but checksum invalid";
+status.frame_ok = true;
+status.checksum_ok = true;
+dist_cm = double(last_valid_frame(3)) + bitshift(double(last_valid_frame(4)), 8);
+strength = double(last_valid_frame(5)) + bitshift(double(last_valid_frame(6)), 8);
+temp_raw = double(last_valid_frame(7)) + bitshift(double(last_valid_frame(8)), 8);
+status.temp_c = temp_raw / 8 - 256;
+status.message = "OK";
+end
+
+function n = get_num_bytes_available(dev)
+n = -1;
+try
+    if isprop(dev, 'NumBytesAvailable')
+        n = double(dev.NumBytesAvailable);
+    elseif isprop(dev, 'BytesAvailable')
+        n = double(dev.BytesAvailable);
+    end
+catch
+    n = -1;
+end
+
+if ~isfinite(n) || (n < 0)
+    n = -1;
+end
 end

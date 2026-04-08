@@ -148,6 +148,8 @@ opts.serial_port = '/dev/serial0'; % opts.serial_port: UART device path on Raspb
 opts.serial_baud = 115200;         % opts.serial_baud: UART baud rate
 opts.serial_timeout_sec = 0.1;     % opts.serial_timeout_sec: serial read timeout (s)
 opts.serial_burst_bytes = 36;      % opts.serial_burst_bytes: bytes requested per read burst
+opts.serial_keep_latest_bytes = 72; % opts.serial_keep_latest_bytes: bytes to retain when dropping stale backlog
+opts.serial_max_read_bytes = 360;   % opts.serial_max_read_bytes: cap for adaptive burst reads
 opts.serial_max_retries = 1;       % opts.serial_max_retries: reconnect attempts per call
 end
 
