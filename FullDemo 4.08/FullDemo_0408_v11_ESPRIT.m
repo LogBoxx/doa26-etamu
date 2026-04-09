@@ -170,12 +170,6 @@ while true
         X_2 = Y_2(); % ULAEL Data  (N_snap x M)
     end
 
-    % === Simple Noise Conditioning ===
-    X_1 = X_1 - mean(X_1, 1);
-    X_2 = X_2 - mean(X_2, 1);
-    X_1 = X_1 / (norm(X_1,'fro') / numel(X_1));
-    X_2 = X_2 / (norm(X_2,'fro') / numel(X_2));
-
     % ===================== ESPRIT DOA ESTIMATION ======================= %
     % Data is (N_snap x M), ESPRIT expects (M x N_snap), so transpose.
 
