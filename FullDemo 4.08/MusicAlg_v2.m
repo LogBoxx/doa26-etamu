@@ -18,7 +18,7 @@ function [En] = MusicAlg_v2(raw_data,J)
 raw_data = raw_data';
 R_x = (raw_data * raw_data') / size(raw_data, 2);
 
-R_fb = [R_x, J * conj(R_x)];
+R_fb = 0.5 * (R_x + J * conj(R_x) * J);
 
 [U_x, ~, ~] = svd(R_fb, 'econ');
 
