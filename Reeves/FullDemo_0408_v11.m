@@ -203,7 +203,7 @@ while true
         el_in = est_EL;    % your estimator output (el_offset applied internally)
 
         [dist_cm, strength, cmd_az, cmd_el, status] = ...
-            get_range_v6(r, az_in, el_in, s_az, s_el, opts);
+            get_range_v7(r, az_in, el_in, s_az, s_el, opts);
 
         fprintf('az_in=%.2f el_in=%.2f cmd_az=%.2f cmd_el=%.2f dist=%.1f str=%d no_action=%d\n', ...
             az_in, el_in, cmd_az, cmd_el, dist_cm, strength, status.track.no_action);
