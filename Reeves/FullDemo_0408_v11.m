@@ -5,9 +5,9 @@
 %           (2) Lidar uses Alden's linear regression algorithm w/
 %               Capstoneociated functions
 %           (3) Req. Functions:
-%               get_range_v5_5
-%               lidar_read_tf02_v5_5
-%               tracker_step_v5_5
+%               get_range_v7
+%               lidar_read_tf02_v7
+%               tracker_step_v7
 %               MusicAlg_v2
 %           (4) Logan added sim mode
 %           (5) Logan added tic toc
