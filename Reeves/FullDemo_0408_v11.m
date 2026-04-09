@@ -34,7 +34,7 @@ if SIM_MODE == false
         opts.max_move_az = 10;   % tune if needed
         opts.max_move_el = 5;    % tune if needed
 
-        get_range_v6('reset');
+        get_range_v7('reset');
         fprintf('Raspberry Pi detected\n');
     catch
         fprintf('Raspberry Pi not detected - LiDAR disabled\n');
