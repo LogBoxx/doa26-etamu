@@ -300,17 +300,17 @@ IIO-Scope expects channel counts in powers of 2. Since signals are complex, each
 
 | Parameter | Value |
 |---|---|
-| Operating Frequency | 2.4 GHz narrowband CW |
+| Operating Frequency | 2.4 GHz |
 | UCA Azimuth Coverage | 360° |
 | UCA Azimuth Accuracy | ±5° |
 | Horizontal ULA Azimuth Coverage | 180° |
 | Horizontal ULA Azimuth Accuracy | ±3° |
 | Vertical ULA Elevation Coverage | 90° |
 | Vertical ULA Elevation Accuracy | ±3° |
-| DoA Processing Time | < 1 second per snapshot |
-| LiDAR Range Finding Time | < 1 second per trial |
-| Max Elements per FMComms5 Board | 4 (8 total across both boards) |
-| UCA Algorithm Support | MUSIC only (ESPRIT requires shift-invariant structure) |
+| DoA Estimation Latency | ~100ms |
+| LiDAR Range Finding Latency | 10ms |
+| Max Elements per FMComms5 Board | 4 |
+| UCA Algorithm Support | MUSIC only |
 
 ---
 
