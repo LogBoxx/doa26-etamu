@@ -1,19 +1,20 @@
 % File: point_servo.m
-% Purpose: Tracker wrapper for servo pointing without LiDAR I/O.
+% Purpose: Tracker wrapper for servo pointing with optional range readout.
 %
 % Usage:
-%   [cmd_az, cmd_el, status] = point_servo(r, az_in, el_in, s_az, s_el)
-%   [cmd_az, cmd_el, status] = point_servo(r, az_in, el_in, s_az, s_el, opts)
+%   [dist_m, cmd_az, cmd_el, status] = point_servo(r, az_in, el_in, s_az, s_el)
+%   [dist_m, cmd_az, cmd_el, status] = point_servo(r, az_in, el_in, s_az, s_el, opts)
 %   point_servo('reset')
 %
 % Inputs are kept identical to get_range_v7 for drop-in compatibility.
 
-function [cmd_az, cmd_el, status] = point_servo(r, azimuth, elevation, s_az, s_el, opts_in)
+function [dist_m, cmd_az, cmd_el, status] = point_servo(r, azimuth, elevation, s_az, s_el, opts_in)
 
 persistent tracker_state;
 persistent t0;
 persistent last_t;
 
+dist_m = NaN;
 cmd_az = NaN;
 cmd_el = NaN;
 status = struct();
@@ -62,8 +63,30 @@ if ~track_status.no_action_el
     writePosition(s_el, cmd_el);
 end
 
+range_status = struct();
+range_status.read_attempted = false;
+range_status.read_ok = false;
+range_status.message = "";
+if is_serial_like(r)
+    range_status.read_attempted = true;
+    try
+        dist_m = read_range(r, opts.bytes_per_sample); % opts.bytes_per_sample: packet length for read_range
+        range_status.read_ok = isfinite(dist_m);
+        if ~range_status.read_ok
+            range_status.message = "Range read returned NaN";
+        end
+    catch ME
+        dist_m = NaN;
+        range_status.read_ok = false;
+        range_status.message = string(ME.message);
+    end
+else
+    range_status.message = "Range input does not expose NumBytesAvailable/read";
+end
+
 status = struct();
 status.track = track_status;
+status.range = range_status;
 status.options = opts;
 end
 
@@ -86,6 +109,9 @@ opts.predict_horizon_sec = 0.06;  % opts.predict_horizon_sec: prediction look-ah
 
 % Blending behavior
 opts.blend_alpha = 0.70;          % opts.blend_alpha: measurement blend weight
+
+% Range read settings
+opts.bytes_per_sample = 4;        % opts.bytes_per_sample: sample length for read_range(typecast single)
 end
 
 function out = merge_opts(base, override)
@@ -96,5 +122,17 @@ end
 fn = fieldnames(override);
 for i = 1:numel(fn)
     out.(fn{i}) = override.(fn{i});
+end
+end
+
+function tf = is_serial_like(obj)
+tf = false;
+if isempty(obj) || ~(isobject(obj) || isstruct(obj))
+    return;
+end
+try
+    tf = isprop(obj, 'NumBytesAvailable') && ismethod(obj, 'read');
+catch
+    tf = false;
 end
 end
