@@ -316,7 +316,7 @@ Monte Carlo simulations tested both algorithms under varying SNR and snapshot co
 
 ## Drive Cloning (AMD Board Backup)
 
-> ⚠️ **Warning:** Double-check source vs. target drives — mixing them up causes irreversible data loss.
+**Warning:** Double-check source vs. target drives — mixing them up causes irreversible data loss.
 
 ```bash
 # Identify drives
