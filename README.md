@@ -6,16 +6,8 @@ Hybrid RF localization system that estimates azimuth, elevation, and range of a 
 **Advisors:** Dr. Tayem, Dr. Radaydeh
 
 ---
-# DOA UAV Tracking System — Project Overview & Operations
 
-**Team:** Logan Boxdorfer, Alden Edwards, Brandon Lewis, Colton Vandenburg, Parker Reeves
-**Advisors:** Dr. Tayem, Dr. Radaydeh
-**Program:** East Texas A&M — Electrical Engineering Senior Design 2025–2026
-**Competition:** AFRL University Design Challenge
-
----
-
-## What It Is
+## Overview
 
 - A real-time RF localization system that estimates the azimuth, elevation, and range of a moving RF source (simulating a drone/UAV)
 - Splits the localization problem into three independent parts: azimuth estimation, elevation estimation, and range
@@ -49,7 +41,7 @@ USRP TX (RPi 4) → [RF propagation] → Antenna Array
 - **NI USRP B200-Mini / USRP-2901** — the RF transmitter; sits on the RC truck, transmits 2.4 GHz CW signal
 - **Raspberry Pi 4 (x2)** — one on RC truck running the transmit script; one controlling the pan-tilt servos
 - **Benewake TF-02 LiDAR** — range finder; mounted on pan-tilt servo; steered by DoA estimates
-- **RC Kei Truck** — mobile platform carrying the transmitter (USRP + Raspberry Pi + battery)
+- **RC Truck** — mobile platform carrying the transmitter (USRP + Raspberry Pi + battery)
 - **USB-to-Ethernet adapter** — connects PC to both Zynq boards
 - **SMA coaxial cables** — length-matched; critical for phase integrity between antenna elements and FMComms5
 - **8x 2.4 GHz monopole antennas**
@@ -104,21 +96,7 @@ The system separates azimuth and elevation into independent 1D estimation proble
 
 ---
 
-## Software / Code Structure (MATLAB R2023b)
-
-- `Demo_FMC5_1D_DOA_submission.m` — **main script**; configures hardware, runs acquisition, calls algorithm, plots results
-- `sjp_get_doa_MUSIC_QR.m` — MUSIC with QR decomp; best for low snapshots (10–15); primary algorithm
-- `sjp_get_doa_OP3R_AZ_8.m` — ESPRIT-like approach for 8-element ULA array
-- `sjp_get_doa_RQR_search_az.m` — Rank-Revealing QR; MUSIC-like spectral search method
-- `get_data_fmc5_OptB.m` — pulls data from both FMComms5 boards; board 1 = negative side, board 2 = positive side
-- `poll_fmc5.m` — low-level hardware comms; handles reconnects and error recovery
-- `reduce_snapshots.m` — compresses raw samples into statistical snapshots via segment averaging; boosts SNR, reduces compute load
-- `tf02_read_once.m` — single one-shot distance reading from TF-02; use for verifying sensor or setup checks
-- `tf02_stream.m` — continuous real-time distance stream from TF-02; what gets used during live demos
-
----
-
-## Repo Structure
+## Structure
 
 ```
 /2025 Team/         work from last year's team
@@ -129,15 +107,14 @@ The system separates azimuth and elevation into independent 1D estimation proble
 /Data Collection/   collected RF and LiDAR data from testing
 /Final Report/      final report and docs
 /Range-Finding/     LiDAR hardware notes and supporting scripts
-tf02_read_once.m    one-shot TF-02 LiDAR read
-tf02_stream.m       continuous TF-02 LiDAR stream
+/Tayem/             Dr. Tayem's supplied code
 ```
 
 ---
 
 ## MATLAB Setup
 
-### Version Matters
+### Version
 
 **r2023b or older:**
 - [Communications Toolbox Support Package for Xilinx Zynq-Based Radio](https://www.mathworks.com/matlabcentral/fileexchange/48491)
@@ -182,7 +159,7 @@ sudo ip addr add 192.168.0.101/24 dev eth0
 sudo ip addr add 192.168.1.101/24 dev eth0
 ```
 
-### Set PC IPs (Windows 10/11)
+### Set PC IPs (Windows 10)
 1. Windows Key + I → Network & Internet → Ethernet
 2. Find your Ethernet device → click it
 3. Scroll to IP settings → Edit → Manual → IPv4 ON
@@ -194,7 +171,7 @@ ping 192.168.0.1
 ping 192.168.1.1
 ```
 
-### Set AMD Board Static IPs (if not already configured)
+### Set board Static IPs (if not already configured)
 ```bash
 # Open terminal on the board: CTRL + ALT + T
 sudo nano /etc/dhcpcd.conf
@@ -216,14 +193,14 @@ Run `ip addr` or `ifconfig` on the board to confirm.
 
 ## Phase Sync / MCS Calibration
 
-> ⚠️ **Required every time the boards are power cycled. DoA will not work without this.**
+**Required every time the boards are power cycled. DoA will not work without this.**
 
 The FMComms5 boards use Multi-Chip Sync (MCS) to phase-align all receive channels. Without it, phase relationships between antennas are meaningless and estimates will be garbage.
 
 1. Wire TX to RX on the board: `TX1_A → RX1_A`, `TX2_A → RX2_A`, `TX1_B → RX1_B`, `TX2_B → RX2_B`
 2. Match all LOs to your target frequency across all four datapaths
 3. Disable receiver tracking: Quadrature, RF DC, BB DC
-4. Set gain mode to `slow_attack`; adjust manually until RSSI is around **50–55 dB**
+4. Set gain mode to `slow_attack`; adjust manually until RSSI is around **40–50 dB**
 5. In the AD936X panel → FMComms5 tab → hit **Reset Calibration** → wait ~5 seconds
 6. Verify TX phase rotation shows 0 → hit **MCS Sync** → wait ~5 seconds
 7. Hit **Calibrate** and wait for it to finish
@@ -250,14 +227,14 @@ IIO-Scope expects channel counts in powers of 2. Since signals are complex, each
 ## How to Operate — Step by Step
 
 ### Step 1: Hardware Setup
-- Place 8-element antenna array on stable surface with clear line-of-sight to transmitter track
+- Place array apparatus on stable surface with clear line-of-sight to transmitter track
 - Connect antennas to FMComms5 boards via SMA cables
 - Connect USB-to-Ethernet adapter from PC → Ethernet cables → each AMD board
 - Power on both AMD boards; confirm status LEDs are active
 
 ### Step 2: Phase Calibration
 - Follow the MCS calibration steps above before doing anything else
-- Do this every power cycle — don't skip it
+- Do this every power cycle
 
 ### Step 3: Start the Transmitter
 - Load USRP B200-Mini, Raspberry Pi, antenna, and battery onto RC truck
