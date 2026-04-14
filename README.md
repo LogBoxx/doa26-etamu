@@ -1,6 +1,6 @@
 # UAV Tracking System – East Texas A&M Senior Design 2026
 
-Hybrid RF localization system that estimates azimuth, elevation, and range of a moving RF source in real time. Built for the AFRL University Design Challenge.
+Hybrid RF localization system that estimates azimuth, elevation, and range of a moving RF source in real time
 
 **Team:** Logan Boxdorfer, Alden Edwards, Brandon Lewis, Colton Vandenburg, Parker Reeves  
 **Advisors:** Dr. Tayem, Dr. Radaydeh
