@@ -1,0 +1,268 @@
+% ======================================================================= %
+% Script:   FullDemo_0410_v13
+% Function: Version 11 is ULA/ULA MUSIC w/ integrated lidar
+% Notes:    (1) MUSIC Algorithm separate; includes FB averaging
+%           (2) Lidar uses Alden's linear regression algorithm w/
+%               Capstoneociated functions
+%           (3) Req. Functions:
+%               get_range_v5_5
+%               lidar_read_tf02_v5_5
+%               tracker_step_v5_5
+%               MusicAlg_v2
+%           (4) Logan added sim mode
+%           (5) Logan added tic toc
+%           (6) New Live Plotting
+% Author:   Parker Reeves
+% Date:     04/08/2026
+% ======================================================================= %
+
+clear all
+
+SIM_MODE = false;
+lid_dis = 0;
+num_trials = 500;
+m_AZ = zeros(size(num_trials));
+m_EL = zeros(size(num_trials));
+
+Navg_EL = 10; %LOGAN
+Navg_AZ = 10; %LOGAN
+est_EL_hist = nan(Navg_EL,1); %LOGAN
+est_AZ_hist = nan(Navg_AZ,1); %LOGAN
+
+% ====================== RANGEFINDER INITIALIZATION ===================== %
+
+if ~SIM_MODE
+    try
+        u = udpport("IPV4", "LocalPort", 5005);
+        rpi = raspi('169.254.67.1', 'analog', 'analog');
+        if ~exist('s_az', 'var')
+            s_az = servo(rpi, 13, 'MinPulseDuration', 5.44e-4, 'MaxPulseDuration', 2.40e-3);
+        end
+        if ~exist('s_el', 'var')
+            s_el = servo(rpi, 12, 'MinPulseDuration', 5.44e-4, 'MaxPulseDuration', 2.40e-3);
+        end
+
+        
+
+        point_servo_v2('reset');
+        fprintf('Raspberry Pi detected\n');
+    catch
+        fprintf('Raspberry Pi not detected - LiDAR disabled\n');
+        r = [];
+        opts_in = struct();
+        lid_dis = 1;
+    end
+else
+        fprintf('Sim Mode True - LiDAR disabled\n');
+        r = [];
+        opts_in = struct();
+end
+
+
+% ==================== ARRAY INITIALIZATION (UCA) ======================= %
+
+c = 3e8;
+f = 2.4e9;
+lambda = c/f;
+
+M = 4;
+d = 0.5;
+k = 2*pi/lambda;
+delta = d*lambda;
+J = fliplr(eye(M));
+
+% =================== SIGNAL RECEPTION / AUTO SIM MODE ================== %
+
+if ~SIM_MODE
+
+    try
+        Y_1 = adi.FMComms5.Rx('uri','ip:192.168.1.101');
+        Y_1.EnabledChannels = [1 2 3 4];
+
+        Y_2 = adi.FMComms5.Rx('uri','ip:192.168.0.1');
+        Y_2.EnabledChannels = [1 2 3 4];
+
+        fprintf('Hardware detected - running in LIVE MODE\n');
+
+    catch
+
+        SIM_MODE = true;
+        fprintf('Hardware not detected - running in SIMULATION MODE\n');
+
+        % Simulated source trajectory parameters
+        sim_az      = -60;
+        sim_el      = -30;
+        sim_az_m1_p = 30;
+        sim_az_m2_p = -15;
+        sim_az_step = 0.25;
+        sim_el_step = 1;
+        sim_az_m1_step = 2;
+        sim_az_m2_step = 5;
+        sim_snr     = 12;
+        N_snap      = 32768;
+
+    end
+
+else
+
+    sim_az      = -60;
+    sim_el      = -30;
+    sim_az_m1_p = -80;
+    sim_az_m2_p = 90;
+    sim_az_step = 1;
+    sim_el_step = 1;
+    sim_az_m1_step = 1;
+    sim_az_m2_step = -1;
+    sim_snr     = 12;
+    N_snap      = 32768;
+    fprintf('Sim Mode True - running in SIMULATION MODE\n');
+
+end
+
+phi_scan   = -90:0.25:90;
+theta_scan = -90:0.25:90;
+
+% ========================== INITIALIZE PLOTS =========================== %
+
+figure;
+    
+h1 = plot(theta_scan, phi_scan , 'rx', 'MarkerSize', 8,'LineWidth',1.5);
+title('2D Source Tracking Path'); xlabel('\phi'); ylabel('\theta'); grid on;
+grid on;
+xlim([-90 90]); ylim([-90 90]);
+
+n_cycles = 0;
+avg_time  = 0;
+
+% ============================== MAIN LOOP ============================== %
+
+while true
+
+    tic  % <<< START cycle timer
+
+    spectrum_1 = zeros(size(theta_scan)); % ULAAZ Array
+    spectrum_2 = zeros(size(phi_scan));   % ULAEL Array
+
+% ====================== DATA CAPTURE OR SIMULATION ===================== %
+
+    if SIM_MODE
+        % Oscillate source back and forth across az and el
+        sim_az = sim_az + sim_az_step;
+        sim_el = sim_el + sim_el_step;
+
+        sim_az_m1_p = sim_az_m1_p + sim_az_m1_step;
+        sim_az_m2_p = sim_az_m2_p + sim_az_m2_step;
+
+        if sim_az >  90 || sim_az < -90, sim_az_step = -sim_az_step; end
+        if sim_el >  90 || sim_el < -90, sim_el_step = -sim_el_step; end
+
+        if sim_az_m1_p >  90 || sim_az_m1_p < -90, sim_az_m1_step = -sim_az_m1_step; end
+        if sim_az_m2_p >  90 || sim_az_m2_p < -90, sim_az_m2_step = -sim_az_m2_step; end
+
+        a_az_true = exp(-1j*k*(0:M-1)'*delta*sind(sim_az));
+        a_el_true = exp(-1j*k*(0:M-1)'*delta*sind(sim_el));
+
+        noise_pwr = 10^(-sim_snr/10);
+        s_sim_az  = (randn(1, N_snap) + 1j*randn(1, N_snap)) / sqrt(2);
+        s_sim_el  = (randn(1, N_snap) + 1j*randn(1, N_snap)) / sqrt(2);
+
+        % Multipath 1
+        a_mp1 = exp(-1j*k*(0:M-1)'*delta*sind(sim_az + 30));
+        s_mp1 = circshift(s_sim_az, sim_az_m1_p);   % delay (samples)
+        phi1  = exp(1j*pi/3);              % phase shift
+
+        % Multipath 2
+        a_mp2 = exp(-1j*k*(0:M-1)'*delta*sind(sim_az - 15));
+        s_mp2 = circshift(s_sim_az, sim_az_m2_p);
+        phi2  = exp(1j*pi/2);
+
+        X_1 = (a_az_true * s_sim_az + 0 * a_mp1 * (phi1 * s_mp1) ...
+            + 0 * a_mp2 * (phi2 * s_mp2) ...
+            + sqrt(noise_pwr) * (randn(M,N_snap)+1j*randn(M,N_snap))/sqrt(2))';
+        X_2 = (a_el_true * s_sim_el + sqrt(noise_pwr) * (randn(M, N_snap) + 1j*randn(M, N_snap)) / sqrt(2))';  % (N_snap x M)
+
+    else
+        X_1 = Y_1(); % ULAAZ Data
+        X_1 = fliplr(X_1);
+        X_2 = Y_2(); % ULAEL Data
+    end
+
+    En_1 = MusicAlg_v2(X_1,J); % ULAAZ Noise subspace
+    En_2 = MusicAlg_v2(X_2,J); % ULAEL Noise subspace
+
+% ================== MUSIC SPECTRUM SEARCH (ULAEL) 2 ===================== %
+
+    for i = 1:length(phi_scan)
+        a_theta = exp(-1j*k*(0:M-1)'*delta*sind(phi_scan(i)));
+        spectrum_2(i) = 1 / abs((a_theta' * (En_2 * En_2') * a_theta));
+    end
+
+    [~, max_idx] = max(10*log10(abs(spectrum_2)));
+    est_EL = abs(phi_scan(max_idx));
+    
+    est_EL_hist = [est_EL_hist(2:end,:); est_EL(:).']; %LOGAN
+    est_EL_avg  = mean(est_EL_hist, 1, 'omitnan'); %LOGAN
+
+% =================== MUSIC SPECTRUM SEARCH (ULAAZ) 1 =================== %
+
+    for t = 1:length(theta_scan)
+        a_scan = exp(-1j*k*(0:M-1)'*delta*sind(theta_scan(t)));
+        spectrum_1(t) = 1 / abs(a_scan'*(En_1*En_1')*a_scan);
+    end
+
+    [~, idx_peak] = max(10*log10(abs(spectrum_1)));
+    est_AZ = theta_scan(idx_peak);
+
+    est_AZ_hist = [est_AZ_hist(2:end,:); est_AZ(:).']; %LOGAN
+    est_AZ_avg  = mean(est_AZ_hist, 1, 'omitnan'); %LOGAN
+
+    % ===================== LIDAR / SIM DISTANCE ======================== %
+
+    if SIM_MODE
+        dist_cm = norm([sim_az, sim_el]) * 10;  % fake distance for display
+        fprintf('Estimated Distance: %.1f cm (simulated)\n', dist_cm);
+    else
+        az_in = est_AZ_avg;      % your estimator output (pre +90 mapping)
+        el_in = est_EL_avg;    % your estimator output (el_offset applied internally)
+
+        if ~lid_dis
+            [cmd_az, cmd_el] = point_servo_v2(rpi, az_in, el_in, s_az, s_el);
+            dist_m = read_range(u,4);
+            fprintf('az_in=%.2f el_in=%.2f cmd_az=%.2f cmd_el=%.2f dist=%.1f', ...
+                az_in, el_in, cmd_az, cmd_el, dist_m);
+            %fprintf(['Estimated Distance: ', dist_m])
+        end
+
+    end
+
+    % m_AZ(o) = est_AZ_avg;
+    % m_EL(o) = est_EL_avg;
+    
+
+    fprintf('Estimated Azimuth: %.2f°\n', est_AZ);
+    fprintf('Estimated Elevation: %.2f°\n', est_EL);
+
+    if SIM_MODE
+        fprintf('True Azimuth:      %.2f°\n', sim_az);
+        fprintf('True Elevation:    %.2f°\n', sim_el);
+    end
+
+% ========================= TICK-TOCK REPORT ============================ %
+
+    elapsed   = toc;
+    n_cycles  = n_cycles + 1;
+    avg_time  = avg_time + (elapsed - avg_time) / n_cycles;  % running mean
+
+    fprintf('DOA Cycle Time: %.4f s  (%.1f Hz)  |  Avg: %.4f s\n', ...
+             elapsed, 1/elapsed, avg_time);
+
+    pause(0.05)
+
+% =========================== VISUALIZATION ============================= %
+
+    set(h1, 'XData', est_AZ);
+    set(h1, 'YData', est_EL);
+
+    drawnow limitrate
+
+end

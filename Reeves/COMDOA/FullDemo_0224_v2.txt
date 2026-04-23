@@ -1,0 +1,103 @@
+% ======================================================================= %
+% Script:   FullDemo_0224_v2
+% Function: Version one attempts full DOA spectrum in both azimuth and
+%           elevation planes utilizing pure MUSIC algorithm
+% Notes:    (1) MUSIC Algorithm separate; includes FB averaging
+% Author:   Parker Reeves
+% Date:     02/24/2026
+% ======================================================================= %
+
+% ==================== ARRAY INITIALIZATION (UCA) ======================= %
+
+N = 4;                  % Number of antennas (UCA)
+c = 3e8;                % Speed of light
+f = 2.4e9;              % Operating Frequency
+lambda = c/f;           % Operating Wavelength
+
+R_radius = 0.5 * lambda; % Radius of the circular array !!!
+prev_DOA = 0; % Inizialize resolveAmbiguity function
+J_1 = [0 0 1 0; 0 0 0 1; 1 0 0 0; 0 1 0 0]; % Initialize identity matrix 
+
+% Antenna positions (UCA)
+n_idx = (0:N-1)';
+phi_n = 2 * pi * n_idx / N; % Angular positions of sensors
+
+% ==================== ARRAY INITIALIZATION (ULA) ======================= %
+
+M = 4;                   % Number of antennas (ULA)
+d = 0.5;                 % Element spacing (in wavelengths)
+k = 2*pi/lambda;         % Wave number (rad/m)
+delta = d*lambda;        % Element spacing in meters
+J_2 = fliplr(eye(M));      % Initialize identity matrix
+
+% ========================= SIGNAL RECEPTION ============================ %
+
+Y_1 = adi.FMComms5.Rx('uri','ip:192.168.0.101');
+Y_1.EnabledChannels = [1 2 3 4];
+
+Y_2 = adi.FMComms5.Rx('uri','ip:192.168.1.101');
+Y_2.EnabledChannels = [1 2 3 4];
+
+theta_scan = 0:0.1:359.9;
+phi_scan = -90:1:90;                % Angle search grid (degrees)
+
+while true
+
+    spectrum_2 = zeros(size(phi_scan));
+    spectrum_1 = zeros(size(theta_scan));
+
+    X_1 = Y_1(); % UCA Data
+    X_2 = Y_2(); % ULA Data
+
+    En_1 = MusicAlg(X_1,J_1); % UCA Noise subspace
+    En_2 = MusicAlg(X_2,J_2);
+
+% ===================== MUSIC SPECTRUM SEARCH (UCA) ===================== %
+
+    for i = 1:length(theta_scan)
+        a_theta = exp(1j * 2 * pi * R_radius / lambda * cosd(theta_test - phi_n));
+        spectrum_1(i) = 1 / real((a_theta' * (En * En') * a_theta));
+    end
+
+    [~, max_idx] = max(10*log10(abs(spectrum_1)));
+    est_DOA = theta_scan(max_idx);
+    est_AZ = resolveAmbiguity(est_DOA, prev_DOA); % correction for 180 ambiguity flips
+
+% ===================== MUSIC SPECTRUM SEARCH (ULA) ===================== %
+
+    for t = 1:length(phi_scan)
+        a_scan = exp(-1j*k*(0:M-1)'*delta*sind(theta_scan(t)));              % Steering vector for scan angle
+        spectrum_2(t) = 1 / real(a_scan'*(En*En')*a_scan);                        % MUSIC pseudo-spectrum value !!!REAL/ABS!!!
+    end
+
+    [~, idx_peak] = max(10*log10(spectrum_2));            % Find peak index in MUSIC spectrum
+    est_EL = abs(theta_scan(idx_peak));         % Store estimated DOA for this trial
+
+% =========================== VISUALIZATION ============================= %
+
+    fprintf('Estimated Azimuth: %.2f°\n', est_AZ); 
+    fprintf('Estimated Elevation: %.2f°\n', est_EL);
+
+    subplot(2,1,1)
+    plot(theta_scan, 10*log10(abs(spectrum_1)), 'LineWidth', 2, 'Color', [0 0.447 0.741]);
+    grid on; hold on;
+    title('UCA MUSIC Spectrum (Direct Element Space)');
+    xlabel('Azimuth Angle (degrees)');
+    ylabel('Pseudo-spectrum (dB)');
+    xlim([0 360]);
+    hold off
+
+    subplot(2,1,2)
+    plot(phi_scan, 10*log10(abs(spectrum_2)), 'LineWidth', 2, 'Color', [0 0.447 0.741]);
+    grid on; hold on;
+    title('ULA MUSIC Spectrum (Direct Element Space)');
+    xlabel('Azimuth Angle (degrees)');
+    ylabel('Pseudo-spectrum (dB)');
+    xlim([-90 90]);
+    hold off
+
+    prev_DOA = est_AZ;
+
+    pause(0.2)
+
+end
