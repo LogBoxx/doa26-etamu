@@ -1,4 +1,4 @@
-# UAV Tracking System – East Texas A&M Senior Design 2026
+# UAV Tracking System for Azimuth, Elevation, Range Estimation for Indoor/Outdoor Application
 ## :trophy: First Place: 2026 AFRL Software-Defined Radio Challenge
 
 Portable hybrid localization system that estimates azimuth, elevation, and range of a moving RF source in real time
