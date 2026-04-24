@@ -1,6 +1,7 @@
 # UAV Tracking System – East Texas A&M Senior Design 2026
+# :trophy: First Place: 2026 AFRL Software-Defined Radio Challenge
 
-Hybrid RF localization system that estimates azimuth, elevation, and range of a moving RF source in real time
+Portable hybrid localization system that estimates azimuth, elevation, and range of a moving RF source in real time
 
 **Team:** Logan Boxdorfer, Alden Edwards, Brandon Lewis, Colton Vandenburg, Parker Reeves  
 **Advisors:** Dr. Tayem, Dr. Radaydeh
@@ -9,70 +10,39 @@ Hybrid RF localization system that estimates azimuth, elevation, and range of a 
 
 ## Overview
 
-- A real-time RF localization system that estimates the azimuth, elevation, and range of a moving RF source (simulating a drone/UAV)
-- Splits the localization problem into three independent parts: azimuth estimation, elevation estimation, and range
-- Uses Direction-of-Arrival (DoA) signal processing algorithms: MUSIC and ESPRIT
-- Combines antenna arrays + LiDAR for full 3D spatial localization in spherical coordinates (azimuth, elevation, range)
-- Built on software-defined radio hardware; all processing runs in MATLAB
+- Real-time RF localization system that estimates the azimuth, elevation, and range of a moving RF source (simulating a drone/UAV)
+- Splits the 2D localization into 2 1D localizations: azimuth estimation, elevation estimation, range thereafter.
+- Uses SVD-MUSIC algorithm with FB averaging
+- Combines antenna arrays + LiDAR for full 3D spatial localization in spherical plot (azimuth, elevation, range)
+- Spectrum also viewable
 
 ---
 
-## Signal Chain
+## Process Flow
 
 ```
-USRP TX (RPi 4) → [RF propagation] → Antenna Array
-→ FMComms5 / ZC702 → MATLAB (MUSIC or ESPRIT) → DoA angles
-→ RPi pan-tilt controller → TF-02 LiDAR → range
-```
+TX:
+USRP B200-Mini transmits a continuous 2.4 GHz tone. Max power (should be turned down to reduce multipathing if using omni)
 
-- USRP B200-Mini (controlled by Raspberry Pi) transmits a continuous 2.4 GHz tone
-- Antenna arrays receive it; FMComms5 boards digitize all 8 channels
-- MATLAB on the host PC runs DoA estimation and produces azimuth + elevation angles
-- Angles are sent to a second Raspberry Pi that drives the pan-tilt servos
-- TF-02 LiDAR physically points at the estimated direction and returns range
+RX:
+Recieved signals → FMComms5 → ZC702 → MATLAB → Az + El DoA estimates → Servos → TF-02 LiDAR fetches range
 
 ---
 
 ## Hardware Components
 
-- **FMComms5 / AD9361** — dual RF transceiver boards; handles multi-channel reception and analog-to-digital conversion
-- **Xilinx Zynq 7000 SoC (ZC702)** — two boards (Top + Bottom); FPGA + ARM; handles data buffering and transfer to PC
-- **8-element antenna array** — hybrid configuration: vertical ULA (elevation) + horizontal ULA or UCA (azimuth)
+- **FMComms5 / AD9361** — dual=chip transceiver boards; 4 TX, 4 RX
+- **AMD Zynq 7000 SoC ZC702** — two boards, one for each array
+- **Antenna Arrays** — hybrid configuration: vertical ULA (elevation) + horizontal ULA or UCA (azimuth)
 - **NI USRP B200-Mini / USRP-2901** — the RF transmitter; sits on the RC truck, transmits 2.4 GHz CW signal
-- **Raspberry Pi 4 (x2)** — one on RC truck running the transmit script; one controlling the pan-tilt servos
+- **Raspberry Pi (2)** — one 
 - **Benewake TF-02 LiDAR** — range finder; mounted on pan-tilt servo; steered by DoA estimates
-- **RC Truck** — mobile platform carrying the transmitter (USRP + Raspberry Pi + battery)
-- **USB-to-Ethernet adapter** — connects PC to both Zynq boards
-- **SMA coaxial cables** — length-matched; critical for phase integrity between antenna elements and FMComms5
-- **8x 2.4 GHz monopole antennas**
-- **Pan-tilt servo platform**
-- **Ethernet switch or dual NIC host PC**
 
 ---
 
 ## Array Configurations
-
-The system separates azimuth and elevation into independent 1D estimation problems rather than doing a full 2D search — cuts computational load significantly.
-
-### UCA / ULA
-- Circular array handles azimuth (360° coverage); vertical linear array handles elevation
-- UCA gives nearly uniform azimuth sensitivity
-- ESPRIT cannot be applied to UCA directly without extra transforms — **MUSIC only** for the azimuth axis on this config
-
-### ULA / ULA
-- Two orthogonal linear arrays, one per axis
-- Both MUSIC and ESPRIT work cleanly here
-- Better subspace separation and more consistent results overall
-- More practical for real-time operation due to ESPRIT's speed advantage
-
----
-
-## Antenna Radiation Patterns
-
-- **UCA** — bell-pepper shaped pattern in 3D; nulls in the azimuth plane at 0°, 90°, 180°, and 270°. If the source is at one of those nulls, received signal drops and estimates will suffer.
-- **ULA** — strong response in front of and behind the array but poor response off the sides
-- **Horizontal ULA + UCA** — complementary coverage in both axes
-- **Two orthogonal ULAs** — stronger spatial selectivity but introduces more lobes and nulls in the combined pattern
+**UCA / ULA**
+**ULA / ULA**
 
 ---
 
@@ -85,14 +55,6 @@ The system separates azimuth and elevation into independent 1D estimation proble
 - Scans candidate angles and finds where the steering vector is most orthogonal to the noise subspace — that's the peak
 - Forward-backward averaging applied to covariance matrix before decomposition — decorrelates reflected signals and stabilizes subspace separation in multipath-heavy environments
 - UCA requires a modified steering vector vs. ULA — phase response at each element depends on its angular position around the circle, not a simple linear phase progression
-
-### ESPRIT
-
-- Splits the array into two overlapping subarrays with a known spacing
-- The same wavefront hits both subarrays with a fixed phase offset — that relationship directly encodes the angle of arrival
-- Extracts DoA from eigenvalues — **no spectral search required**
-- Faster than MUSIC, needs fewer snapshots to stabilize — more practical for real-time
-- **Requires shift-invariant array structure** — UCA doesn't naturally provide this, so ESPRIT is ULA only
 
 ---
 
