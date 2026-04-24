@@ -20,7 +20,6 @@ Portable hybrid localization system that estimates azimuth, elevation, and range
 
 ## Process Flow
 
-```
 TX:
 USRP B200-Mini transmits a continuous 2.4 GHz tone. Max power (should be turned down to reduce multipathing if using omni)
 
@@ -70,7 +69,6 @@ Recieved signals → FMComms5 → ZC702 → MATLAB → Az + El DoA estimates →
 /Final Report/      final report and docs
 /Range-Finding/     LiDAR hardware notes and supporting scripts
 /Tayem/             Dr. Tayem's supplied code
-```
 
 ---
 
