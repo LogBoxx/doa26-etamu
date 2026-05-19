@@ -58,7 +58,7 @@ try
     fprintf("Dist = %.1f cm   Strength = %d   Temp = %.1f C\n", dist_cm, strength, temp_C); 
     clear dev; 
  catch exception
-    fprintf("Shit Really Fucked Now Buddy");
+    fprintf("Issue");
     fprintf(exception);
 end
 
